@@ -1,0 +1,7 @@
+The bundled asset std/STD_to_VLOG_2nd.cube is a functional colour
+conversion table extracted from Panasonic LUMIX LAB and is Copyright
+Panasonic Holdings Corporation. It is included for interoperability with
+Panasonic "STD" photo-style LUTs on the user's own files, for personal
+use only. It is NOT covered by this project's MIT license and must not
+be redistributed separately or in derivative APKs without permission
+from Panasonic.

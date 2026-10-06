@@ -1,0 +1,7 @@
+This application uses the stb single-file libraries (stb_image.h,
+stb_image_write.h) for image file I/O.
+
+Portions Copyright (c) 2017 Sean T. Barrett and contributors.
+These libraries are in the public domain where applicable, and may also
+be used under the MIT license at the user's choice (dual license).
+Source: https://github.com/nothings/stb
