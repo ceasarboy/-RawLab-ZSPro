@@ -1,0 +1,89 @@
+# Sony2Fuji Build Files
+
+# Build directories
+build/
+build-*/
+*.xcodeproj/
+*.xcworkspace/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+cmake-build-*/
+*.cmake
+!CMakeLists.txt
+
+# Compiled Object files
+*.o
+*.obj
+*.lo
+*.so
+*.dylib
+*.dll
+*.exe
+
+# Static libraries
+*.a
+*.lib
+
+# IDE specific
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Android
+.gradle/
+.cxx/
+local.properties
+*.iml
+platform/android/jniLibs/
+platform/android/.externalNativeBuild/
+
+# iOS
+*.framework/
+*.dSYM/
+*.ipa
+platform/ios/build/
+
+# Test files
+*.ARW
+*.arw
+test_images/
+output/
+
+# Temporary files
+*.log
+*.tmp
+temp/
+
+# Documentation build
+docs/_build/
+docs/.doctrees/
+
+# Package managers
+node_modules/
+vendor/
+
+# Compiled addons
+*.node
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.egg-info/
+
+# Backup files
+*.bak
+*.backup
+
+# Dependencies
+deps/
+third_party/*
+!third_party/stb_image_write.h
+!third_party/Adobe-DNG-SDK-LICENSE.txt

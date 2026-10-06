@@ -1,0 +1,156 @@
+# RawLab Mac
+
+原生 SwiftUI/AppKit 桌面验证客户端，与 CLI/iOS 共用 C++ 处理管线。当前构建产物针对本机 Apple Silicon 和 macOS 26+，没有宣称在其他 macOS 版本验证通过。
+
+A native SwiftUI/AppKit desktop editor for visual verification, sharing the C++ pipeline with the CLI and iOS client. The current build targets Apple Silicon and macOS 26+; other macOS versions have not been validated.
+
+## 功能预览 / Preview
+
+![RawLab Mac：中性与 Velvia 效果对比 / Neutral and Velvia comparison](../docs/images/rawlab-mac-velvia.png)
+
+左侧为中性渲染，右侧为 Velvia 胶片效果；底部集中提供胶片选择及曝光、明暗、色彩、白平衡和锐化调整。
+
+The left pane is the neutral render and the right pane is Velvia. Film selection and exposure, tone, color, white balance and sharpening controls are grouped at the bottom.
+
+## 构建和启动 / Build and Launch
+
+预编译版本：[GitHub Release v0.1](https://github.com/dancancer/RawLab/releases/tag/v0.1)。下载 `RawLab-Mac-0.1-macOS-arm64.zip` 后解压，可将 `RawLab Mac.app` 放入 Applications。此产物仅支持 Apple Silicon 和 macOS 26+；采用 ad-hoc 签名，没有 Developer ID 签名或 Apple 公证，macOS 可能阻止默认打开。
+
+Prebuilt app: [GitHub Release v0.1](https://github.com/dancancer/RawLab/releases/tag/v0.1). Extract `RawLab-Mac-0.1-macOS-arm64.zip` and move `RawLab Mac.app` to Applications. It requires Apple Silicon and macOS 26+. It is ad-hoc signed, without Developer ID signing or Apple notarization, so macOS may block opening it by default.
+
+在仓库根目录执行：
+
+Run from the repository root:
+
+```bash
+bash RawLabMac/build.sh
+open "build/RawLab Mac.app"
+```
+
+依赖 CMake、pkg-config、LibRaw 和 Apple Command Line Tools。当前 Homebrew LibRaw 的最低系统版本是 26，所以脚本默认以 26.0 为 deployment target；具备更低版本依赖时可显式设置 `MACOSX_DEPLOYMENT_TARGET`。CLT 27 的 SwiftUI 宏插件不完整时，脚本使用本机已有的 26.5 SDK，也可用 `SDKROOT` 指定。
+
+Requires CMake, pkg-config, LibRaw and Apple Command Line Tools. The current Homebrew LibRaw requires macOS 26, so the default deployment target is 26.0. Set `MACOSX_DEPLOYMENT_TARGET` only when the dependencies also support the lower target. When the CLT 27 SwiftUI macro plugin is unavailable, the script uses the locally installed 26.5 SDK; `SDKROOT` can override it.
+
+构建脚本打包所需 Homebrew 动态库并进行本地 ad-hoc 签名，不做分发公证，不修改系统 Xcode license 状态。
+
+The build script embeds the required Homebrew libraries and applies a local ad-hoc signature. It does not notarize the app or change Xcode's license acceptance state.
+
+构建时会重新复制动态依赖、将递归依赖改为应用内 `@rpath`，并运行 `tests/bundle.sh` 检查不存在本机 Homebrew 路径。依赖许可证随应用保存在 `Contents/Resources/Licenses`；[第三方说明](Resources/ThirdPartyNotices.md)记录来源，Release 同时提供 LibRaw 对应版本的源代码归档。
+
+Each build refreshes the embedded libraries, rewrites transitive dependencies to in-app `@rpath` references, and runs `tests/bundle.sh` to reject Homebrew paths. Licenses are included under `Contents/Resources/Licenses`; the [third-party notices](Resources/ThirdPartyNotices.md) identify their sources. The release also provides a LibRaw source archive for the corresponding version.
+
+应用图标采用深灰底上的黄色/青色交叠画幅，表达 RAW 与显影结果之间的色彩转换。无相机、光圈或品牌文字，使用扁平几何图形。源图位于 `Resources/AppIcon.png`；构建时由 `build-icon.sh` 生成覆盖 16–1024 像素的原生 `.icns`，并通过 `CFBundleIconFile` 注册。图像生成说明见 `Resources/AppIcon.md`。
+
+The flat app icon uses overlapping yellow/cyan frames on charcoal to suggest the RAW-to-render color transformation, without camera, aperture or brand lettering. The source is `Resources/AppIcon.png`; `build-icon.sh` generates a native 16-1024px `.icns`, registered through `CFBundleIconFile`. Generation provenance is in `Resources/AppIcon.md`.
+
+## 使用 / Usage
+
+- 打开或拖入 RAW；内置十种 Fuji 胶片 LUT，也可导入声明了兼容输入/输出的 CUBE。
+
+  Open or drag in a RAW file. Ten Fuji film LUTs are bundled; you can also import CUBE files declaring compatible input/output contracts.
+- 左侧文件树支持添加多个本地目录、按需展开子目录和点击 RAW 缩略图选片，可从工具栏收起。目录列表会保留；从侧栏移除目录不会删除原文件。缩略图只读取内嵌预览，不自动触发完整显影。
+
+  Add multiple local directories, expand subdirectories on demand and select RAW thumbnails in the collapsible left file tree. The directory list persists; removing an entry never deletes files. Thumbnails use embedded previews rather than full RAW development.
+- 中性与结果并排对比，共享缩放和平移。适合模式使用 2000 像素预览；100% 模式重新渲染完整分辨率。
+
+  Neutral and film panes share zoom and pan. Fit mode uses a 2000px preview; 100% mode renders the original resolution.
+- 曝光在线性域处理。RAW 白平衡默认“拍摄时设置”：通过相机原始白平衡增益和校准矩阵推算 Kelvin/色调，绝非固定 6500 K。色温范围 2000–50000 K，调高偏暖；色调范围 -150–150，负值偏绿、正值偏洋红。选择“拍摄时设置”恢复相机原始增益，分组/全部重置保留每张照片自己的基准。
+
+  Exposure runs in linear space. RAW white balance starts at As Shot, with Kelvin/tint estimated from camera gains and calibration rather than fixed at 6500 K. Temperature spans 2000-50000 K and higher values warm the image; tint spans -150 to +150, from green to magenta. As Shot restores the original gains; group and global resets retain each photo's baseline.
+- 自定义白平衡在去马赛克和富士 LUT 之前以相机通道增益应用，采用 Adobe DNG SDK 的色温/色度转换模型与 LibRaw 的相机校准，不使用显示 RGB 的黑体颜色染色。滑杆使用倒色温刻度。Kelvin 是配置相关的估计值，不承诺与 Lightroom 私有相机配置显示相同数字。缺少有效三通道校准的 RAW 仍可使用拍摄白平衡，但禁用 Kelvin/色调调整。
+
+  Custom WB applies camera-channel gains before demosaicing and the Fuji LUT, using the Adobe DNG SDK temperature/chromaticity model and LibRaw calibration, not black-body tinting of display RGB. The slider uses reciprocal Kelvin. Displayed Kelvin is profile-dependent and is not promised to match Lightroom's proprietary profiles. RAW files without valid three-channel calibration retain camera WB, but Kelvin/tint controls are disabled.
+- 默认“标准显影”：基础曝光为 +0.7 EV 加有效的 DNG BaselineExposure；不读取 JPEG 估计默认曝光，也不自动撤销拍摄时的曝光补偿。这是公开的工作流起点，不是逐机型绝对标定。
+
+  Standard Development starts at +0.7 EV plus valid DNG BaselineExposure. It neither meters the JPEG for the default exposure nor automatically cancels in-camera exposure compensation. This is a documented workflow starting point, not absolute per-camera calibration.
+- “曝光基准”菜单可切换“匹配内嵌预览”和“传感器基准”，界面显示实际基础偏移。前者是可选的近似匹配，后者关闭基础曝光补偿。切换模式会使 RAW 缓存失效。
+
+  The Exposure Baseline menu also offers Match Embedded Preview and Sensor Baseline, showing the actual base offset. Preview matching is an optional approximation; Sensor Baseline disables compensation. Switching modes invalidates the RAW cache.
+- 中性预览使用保留高光层次的 sigmoid 显示映射。富士 LUT 使用另一分支，直接接收线性 RGB 转换后的 F-Gamut / F-Log2，不会先套中性的显示曲线。
+
+  Neutral previews use a highlight-preserving sigmoid display mapping. The Fuji LUT branch receives F-Gamut / F-Log2 converted directly from linear RGB, without first applying the neutral display curve.
+- 右上角悬浮直方图可收起，折叠状态不因换片重置。RGB 共用线性像素计数纵轴，填充重叠产生黄/青/洋红和灰色，不再使用对数细线。统计最终 sRGB 显示图，不代表传感器已过曝，也不等同于 Lightroom Develop 的内部宽色域统计。
+
+  The upper-right histogram collapses independently of photo selection. RGB channels share a linear pixel-count axis; filled overlaps produce yellow/cyan/magenta and gray, not logarithmic outlines. It measures the final sRGB display image, not sensor clipping or Lightroom Develop's internal wide-gamut histogram.
+- 所有调整集中在右侧工作区底部。胶片与强度、曝光、明暗、色彩、细节参数处于同一排圆形工具中；选择胶片后，下方展示方形包装正面图案，能放下时居中，超出宽度时横向滚动。图片参照实际包装的配色和版式生成，不是官方原图；无对应实体产品的模拟使用标注 `FILM SIMULATION` 的概念图案。
+
+  All controls sit at the bottom of the right workspace. Film selection is a peer of strength, exposure, tone, color and detail in one circular tool row. Film labels below are centered when they fit and scroll horizontally otherwise. The square artwork is generated from packaging colors/layouts, not official imagery; simulations without physical film use concept labels marked `FILM SIMULATION`.
+- 拖动调整栏顶部边界可改变高度；点击收起按钮或顶部调整图标可完全隐藏，再次点击顶部调整图标恢复先前高度和参数。左侧文件树贯穿内容区全高，不被调整栏截断。
+
+  Drag the dock's upper edge to resize it. Collapse it completely and restore its previous height and settings using the toolbar adjustment icon. The left file tree spans the full content height and is not cut off by the dock.
+- 顶部缩放菜单集中提供适合窗口、100% 实际像素、放大和缩小；对比为单个切换按钮。画布无顶部黑色标题条，右上角直方图使用半透明背景和纯图标标题。
+
+  The zoom menu provides Fit, 100%, Zoom In and Zoom Out. Comparison uses one toggle. There is no black title strip above the canvas; the histogram has a translucent surface and icon-only header.
+- 每项支持滑杆、直接输入数字、单项重置；另有分组和全部调整重置。黄色进度环以默认值为起点，正向顺时针、负向逆时针，两侧按各自可调范围归一化。重置不会更换当前 RAW 或选中的 LUT。
+
+  Each adjustment has a slider, numeric input and individual reset, alongside group/global resets. Yellow rings start at the default: positive values fill clockwise, negative values counterclockwise, normalized separately for each side of the range. Resets do not change the RAW or selected LUT.
+- 切换照片会在本次应用会话中保留各自的参数和胶片选择，新照片使用默认调整；这些编辑不写回 RAW，也尚未保存为跨会话的编辑档案。
+
+  Each photo retains its adjustments and film selection during the app session; new photos start with defaults. Edits never modify RAW files and are not yet persisted as cross-session edit records.
+- 明暗组提供对比度、高光、阴影、S 曲线强度；色彩组提供饱和度；细节组提供锐化。六项 UI 默认均为 0，对比度/饱和度映射到核心的恒等系数 1，其他项映射为 0。高光/阴影正值提亮、负值压暗。这些是 LUT 后成片微调，不是 RAW 高光重建，也不是 darktable 完整模块的移植。
+
+  Tone includes contrast, highlights, shadows and S-curve strength; color includes saturation; detail includes sharpening. All six controls default to 0 in the UI, with contrast/saturation mapped to identity factor 1 in the core. Positive highlight/shadow values brighten and negative values darken. These are post-LUT finishing controls, not RAW highlight reconstruction or a full port of darktable modules.
+- 启用锐化时先在原图像素尺度处理，再缩小预览，避免预览和导出锐化半径不一致；预览会比未锐化时慢。100% 视图可检查真实像素细节。本批不暴露简单模糊式降噪。
+
+  Sharpening runs at source-pixel scale before preview reduction to keep its radius consistent with export, so sharpened previews take longer. Use 100% view for real pixel inspection. Simple blur-based noise reduction is not exposed in this UI.
+- JPEG/16-bit PNG 导出使用原始 RAW 重新全分辨率渲染，不放大 8-bit 预览。导出不会覆盖原始 RAW 路径。
+
+  JPEG and 16-bit PNG exports render at full RAW resolution rather than enlarging an 8-bit preview. Export cannot overwrite the input RAW path.
+- 渲染串行执行，最多保留一个在途请求和一个最新待处理请求。拖动滑杆时使用 1000 像素交互预览，松手后自动替换成 2000 像素或原尺寸的精确结果；精确结果完成前禁止导出。数字输入直接触发精确渲染。
+
+  Rendering is serial, with at most one in-flight and one latest pending request. Dragging uses a 1000px interactive preview; release replaces it with an exact 2000px or native-resolution result. Export stays disabled until exact work completes. Numeric input requests exact rendering directly.
+- 会话保留当前 RAW 的解包数据和一份线性结果；连续 Kelvin/色调变化复用解包数据，但仍重新执行相机空间白平衡、去马赛克和高光处理。拍摄/自动/自定义白平衡模式之间的切换可能重新识别文件。交互白平衡使用 LibRaw half-size 处理；已有匹配的完整质量缓存可直接供交互预览使用，反之不允许。文件导出和 FINAL 请求始终忽略交互质量标志。
+
+  The session retains unpacked RAW data and one linear result. Numeric Kelvin/tint changes reuse unpacked data but rerun camera-space WB, demosaicing and highlight handling. Switching camera/auto/custom WB may re-identify the file. Interactive WB uses LibRaw half-size processing; a matching full-quality cache can serve a proxy, never the reverse. File export and FINAL requests ignore the interactive-quality flag.
+- Mac 默认使用 Metal Auto，支持色域矩阵、曝光、F-Log2、3D LUT、强度、明暗/色彩、细节和缩放；失败回退 CPU。LibRaw 解包、去马赛克、高光重建和文件编码仍在 CPU。中间 GPU 图像使用两个交替复用的缓冲区，避免每一阶段都保留原尺寸副本。
+
+  Mac defaults to Metal Auto for gamut matrices, exposure, F-Log2, 3D LUT, strength, tone/color, detail and resize, with CPU fallback on failure. LibRaw unpacking, demosaicing, highlight reconstruction and file encoding remain on the CPU. GPU stages reuse two intermediate buffers instead of retaining a full-size copy per stage.
+- 直方图和裁切蒙版已移到 C++，同时提供 Metal 实现。本机实测 CPU 对这些已回读的像素更快，因此 Auto 使用优化后的 CPU 统计，不为使用 GPU 而增加上传/回读开销。
+
+  Histogram and clipping-mask generation now run in C++, with a Metal implementation also available. CPU was faster on this machine for pixels already read back, so Auto uses optimized CPU statistics rather than adding unnecessary GPU transfers.
+
+## 验证 / Verification
+
+RAW 样片不再随仓库分发。运行真实 RAW 测试前设置 `RAWLAB_TEST_RAW=/path/to/sample.ARW`；
+独立 CMake 构建使用 `-DSONY2FUJI_TEST_RAW=/path/to/sample.ARW`。下面的历史报告可能引用已删除的旧样片。
+
+验证文档中的 `/tmp` 和 `.impeccable/review` 路径记录本机产物，不随 Git 发布；本地 RAW 样片也不随本次提交上传。缺少可选样片时，CMake 会跳过对应测试。
+
+Paths under `/tmp` and `.impeccable/review` in verification reports refer to local artifacts, not published Git files. Local RAW fixtures are also excluded from the release commit. CMake omits tests whose optional fixtures are absent.
+
+```bash
+bash lutools/test.sh
+SONY2FUJI_TEST_GPU=1 ctest --test-dir lutools/build-verify -R color_contracts --output-on-failure
+bash RawLabMac/tests/smoke.sh
+bash RawLabMac/tests/adjustments.sh
+bash RawLabMac/tests/presentation.sh
+bash RawLabMac/tests/app-icon.sh
+bash RawLabMac/tests/histogram.sh
+bash RawLabMac/tests/render-scheduling.sh
+RUN_PROGRESSIVE_RENDER=1 bash RawLabMac/tests/progressive-render.sh
+```
+
+Smoke 模式验证 Sony ARW 和存在时的 DJI DNG，输出全分辨率 PNG/JPEG、预览统计和 JSON 至临时目录，并验证缺失输入报错。使用交互界面检查文件选择、参数调整、视图切换和缩放。
+
+Smoke mode checks Sony ARW and, when present, DJI DNG; it writes native-resolution PNG/JPEG, preview statistics and JSON to a temporary directory and checks missing-input errors. Use the interactive app to inspect file selection, adjustments, view switching and zoom.
+
+`adjustments.sh` 验证设置映射、数值范围/非法输入、各级重置，并自动枚举 `lutools/examples` 下的 RAW（包括被 Git 忽略的样片）。每张照片逐项验证六项参数确实改变渲染且不改变 RAW 基础曝光，检查复位结果与 100% 缓冲/16-bit PNG 导出的像素一致性。
+
+`adjustments.sh` checks control mappings, numeric bounds/invalid input and resets, enumerating RAW files under `lutools/examples`, including Git-ignored fixtures. For each photo it checks that all six controls affect output without altering the RAW exposure baseline, that reset restores the result, and that native-resolution display/16-bit PNG pixels agree.
+
+`presentation.sh` 验证原生图标、正负进度环计算、连续缩放与 Retina 实际像素比例、逐照片参数隔离，以及包含 ARW/ARQ/DNG 的目录筛选。
+
+`presentation.sh` checks native symbols, signed adjustment rings, continuous zoom and Retina actual-pixel scale, per-photo isolation, and directory filtering for ARW/ARQ/DNG.
+
+加速回归由 `ctest --test-dir lutools/build-macos --output-on-failure` 执行，包含真实 Sony/DJI RAW 的 CPU/Metal 一致性、交互/精确/导出隔离，以及直方图和裁切蒙版逐值一致性。`render_benchmark` 是显式运行的性能工具，不对机器速度设置 CI 阈值：
+
+`ctest --test-dir lutools/build-macos --output-on-failure` covers real Sony/DJI CPU/Metal parity, interactive/exact/export isolation, and exact histogram/mask agreement. `render_benchmark` is opt-in and does not impose machine-speed thresholds in CI:
+
+```bash
+cmake --build lutools/build-macos --target render_benchmark
+lutools/build-macos/render_benchmark RawLab/RawLab/Resources/Samples/DSC09067.ARW lutools/flog-2-new/FLog2_to_PROVIA_65grid_V.1.00.cube
+```
+
+具体工作空间、曝光约定、LUT 要求见 `../lutools/docs/color-contract.md`。相机颜色准确度仍需要受控光源/灰卡/色卡标定；能够处理 RAW 不等同于复刻 Fuji 机内 JPEG。
+
+See the [color contract](../lutools/docs/color-contract.md) for working spaces, exposure and LUT requirements. Camera color accuracy still requires controlled lighting and gray/color-chart calibration; processing a RAW is not equivalent to reproducing Fuji in-camera JPEGs.

@@ -1,0 +1,27 @@
+#pragma once
+
+#include "gpu/photo_gpu.h"
+#include <memory>
+
+namespace sony2fuji {
+
+class GlesPhotoRenderer {
+public:
+    GlesPhotoRenderer();
+    ~GlesPhotoRenderer();
+    GlesPhotoRenderer(const GlesPhotoRenderer&) = delete;
+    GlesPhotoRenderer& operator=(const GlesPhotoRenderer&) = delete;
+
+    // decodeRevision is session-owned; zero disables reuse for mutable buffer inputs.
+    bool render(const ImageData& input, ColorSpace inputSpace,
+        const sony2fuji_request& request, const std::shared_ptr<LUT3D>& lut,
+        const std::shared_ptr<LUT3D>& lutB, float strengthB,
+        const RGB& relativeWB, uint32_t width, uint32_t height,
+        bool lutOnDisplay, uint64_t decodeRevision, ImageData& output);
+
+private:
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+};
+
+}

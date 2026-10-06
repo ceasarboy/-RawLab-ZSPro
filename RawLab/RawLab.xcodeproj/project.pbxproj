@@ -1,0 +1,501 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0B1A0382CA7A4764A8AD3A12 /* UI/ContentView+Panels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ADA789EA8FD48A0A2CFE618 /* UI/ContentView+Panels.swift */; };
+		1EC89F7C2A064F91BF79E1B6 /* Core/Models/EditorMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFFDD45E0E844BA390EAB3E5 /* Core/Models/EditorMode.swift */; };
+		224DEC4CD11A6EBF355EB5D5 /* X100VI_FLog2_FGamut_to_WDR_BT.709_33grid_V.1.00.cube in Resources */ = {isa = PBXBuildFile; fileRef = F4277C52BDF5D163BC80D61A /* X100VI_FLog2_FGamut_to_WDR_BT.709_33grid_V.1.00.cube */; };
+		26F51EBF7B154D2F744F8B60 /* Resources/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D71C4D9C452E6C484F74EDAB /* Resources/Assets.xcassets */; };
+		2A9B3E15E0704167ABE93960 /* Core/ViewModel/RawEditorViewModel+IO.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE4383A5710944379318C704 /* Core/ViewModel/RawEditorViewModel+IO.swift */; };
+		2C5BFAB858B74B81AFAC16D0 /* Core/Models/PhotoImportTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99C86E9A92BE4E3A8BF782CB /* Core/Models/PhotoImportTypes.swift */; };
+		366A9A71BB194587A8AECB5A /* Core/Models/AdjustmentKind.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75200EAB73DE45D5AC8120CC /* Core/Models/AdjustmentKind.swift */; };
+		474AC2ED2640F238B875DFBA /* App/RawLabApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B52131DB065AE51B1A552B /* App/RawLabApp.swift */; };
+		47CDB4BD40F8E95C22A25C18 /* X100VI_FLog2_FGamut_to_ETERNA-BB_BT.709_33grid_V.1.00.cube in Resources */ = {isa = PBXBuildFile; fileRef = A77856C73D4EEE89269EC86C /* X100VI_FLog2_FGamut_to_ETERNA-BB_BT.709_33grid_V.1.00.cube */; };
+		54CCF4B9CD4492224FC36730 /* UI/ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ADA8D603BB120B2616B82E8 /* UI/ContentView.swift */; };
+		568E6B659A004F7792056543 /* UI/ContentView+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CE93B9AEFEC48F9B6535407 /* UI/ContentView+Helpers.swift */; };
+		2B3C4D5E6F7A8B9C0D1E2F3A /* UI/TickMarksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7A8B9C0D1E2F /* UI/TickMarksView.swift */; };
+		5925D383E992E267E84A557D /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BCB01F09DF53FD6D170136CB /* Foundation.framework */; };
+		7A32C02543E94D8D8AD059DA /* Core/ViewModel/RawEditorViewModel+Rendering.swift in Sources */ = {isa = PBXBuildFile; fileRef = 893AFB855B8D4C46BF182760 /* Core/ViewModel/RawEditorViewModel+Rendering.swift */; };
+		8AB36831B341E3B694012874 /* X100VI_FLog2_FGamut_to_ETERNA_BT.709_33grid_V.1.00.cube in Resources */ = {isa = PBXBuildFile; fileRef = 788C90B58BF7C560F73C4E4E /* X100VI_FLog2_FGamut_to_ETERNA_BT.709_33grid_V.1.00.cube */; };
+		CFFC01EE4735339101D924D2 /* X100VI_FLog2_FGamut_to_FLog2_BT.709_33grid_V.1.00.cube in Resources */ = {isa = PBXBuildFile; fileRef = C27C06BF4BCB890F305027DB /* X100VI_FLog2_FGamut_to_FLog2_BT.709_33grid_V.1.00.cube */; };
+		D883E2F5F205AC0EFBF9C319 /* Core/ViewModel/RawEditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BBA826F203D41BCC1DF31C0 /* Core/ViewModel/RawEditorViewModel.swift */; };
+		EDCB99B43F3C4149B2F7622B /* Core/Models/RawSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = E032598E21034CC384DC2993 /* Core/Models/RawSettings.swift */; };
+		F985B27612A241E0BF2D3B6E /* Core/ViewModel/RawEditorViewModel+LUT.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEE59480F18546D2BD9AEB9E /* Core/ViewModel/RawEditorViewModel+LUT.swift */; };
+		8F3A1B2C3D4E5F6789012345 /* Core/RawProcessing/Sony2FujiProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F3A1B2C3D4E5F6789012346 /* Core/RawProcessing/Sony2FujiProcessor.swift */; };
+		8F3A1B2C3D4E5F678901234F /* Core/RawProcessing/Sony2FujiProcessor+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F3A1B2C3D4E5F6789012350 /* Core/RawProcessing/Sony2FujiProcessor+Helpers.swift */; };
+		8F3A1B2C3D4E5F678901234B /* sony2fuji.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8F3A1B2C3D4E5F678901234A /* sony2fuji.xcframework */; };
+		8F3A1B2C3D4E5F678901234C /* sony2fuji.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8F3A1B2C3D4E5F678901234A /* sony2fuji.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C9A1B2C3D4E5F60718293A4B /* Support/RawMetadataBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = C9A1B2C3D4E5F60718293A4D /* Support/RawMetadataBridge.mm */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		5BBA826F203D41BCC1DF31C0 /* Core/ViewModel/RawEditorViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RawEditorViewModel.swift; sourceTree = "<group>"; };
+		6CE93B9AEFEC48F9B6535407 /* UI/ContentView+Helpers.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "ContentView+Helpers.swift"; sourceTree = "<group>"; };
+		75200EAB73DE45D5AC8120CC /* Core/Models/AdjustmentKind.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AdjustmentKind.swift; sourceTree = "<group>"; };
+		788C90B58BF7C560F73C4E4E /* X100VI_FLog2_FGamut_to_ETERNA_BT.709_33grid_V.1.00.cube */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = X100VI_FLog2_FGamut_to_ETERNA_BT.709_33grid_V.1.00.cube; path = "x100vi-3d-lut-v100/F-Log2/X100VI_FLog2_FGamut_to_ETERNA_BT.709_33grid_V.1.00.cube"; sourceTree = "<group>"; };
+		7ADA789EA8FD48A0A2CFE618 /* UI/ContentView+Panels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "ContentView+Panels.swift"; sourceTree = "<group>"; };
+		7ADA8D603BB120B2616B82E8 /* UI/ContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F7A8B9C0D1E2F /* UI/TickMarksView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TickMarksView.swift; sourceTree = "<group>"; };
+		893AFB855B8D4C46BF182760 /* Core/ViewModel/RawEditorViewModel+Rendering.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "RawEditorViewModel+Rendering.swift"; sourceTree = "<group>"; };
+		99C86E9A92BE4E3A8BF782CB /* Core/Models/PhotoImportTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhotoImportTypes.swift; sourceTree = "<group>"; };
+		A77856C73D4EEE89269EC86C /* X100VI_FLog2_FGamut_to_ETERNA-BB_BT.709_33grid_V.1.00.cube */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = "X100VI_FLog2_FGamut_to_ETERNA-BB_BT.709_33grid_V.1.00.cube"; path = "x100vi-3d-lut-v100/F-Log2/X100VI_FLog2_FGamut_to_ETERNA-BB_BT.709_33grid_V.1.00.cube"; sourceTree = "<group>"; };
+		A7B52131DB065AE51B1A552B /* App/RawLabApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RawLabApp.swift; sourceTree = "<group>"; };
+		AE4383A5710944379318C704 /* Core/ViewModel/RawEditorViewModel+IO.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "RawEditorViewModel+IO.swift"; sourceTree = "<group>"; };
+		BCB01F09DF53FD6D170136CB /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		C27C06BF4BCB890F305027DB /* X100VI_FLog2_FGamut_to_FLog2_BT.709_33grid_V.1.00.cube */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = X100VI_FLog2_FGamut_to_FLog2_BT.709_33grid_V.1.00.cube; path = "x100vi-3d-lut-v100/F-Log2/X100VI_FLog2_FGamut_to_FLog2_BT.709_33grid_V.1.00.cube"; sourceTree = "<group>"; };
+		CA5CD9BDDDA592CD1F77CFCB /* Resources/Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D71C4D9C452E6C484F74EDAB /* Resources/Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		E032598E21034CC384DC2993 /* Core/Models/RawSettings.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RawSettings.swift; sourceTree = "<group>"; };
+		ED52E5E1D6C957F64808BB11 /* RawLab.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RawLab.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		EFFDD45E0E844BA390EAB3E5 /* Core/Models/EditorMode.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EditorMode.swift; sourceTree = "<group>"; };
+		F4277C52BDF5D163BC80D61A /* X100VI_FLog2_FGamut_to_WDR_BT.709_33grid_V.1.00.cube */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = X100VI_FLog2_FGamut_to_WDR_BT.709_33grid_V.1.00.cube; path = "x100vi-3d-lut-v100/F-Log2/X100VI_FLog2_FGamut_to_WDR_BT.709_33grid_V.1.00.cube"; sourceTree = "<group>"; };
+		FEE59480F18546D2BD9AEB9E /* Core/ViewModel/RawEditorViewModel+LUT.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "RawEditorViewModel+LUT.swift"; sourceTree = "<group>"; };
+		8F3A1B2C3D4E5F6789012346 /* Core/RawProcessing/Sony2FujiProcessor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Sony2FujiProcessor.swift; sourceTree = "<group>"; };
+		8F3A1B2C3D4E5F6789012350 /* Core/RawProcessing/Sony2FujiProcessor+Helpers.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "Sony2FujiProcessor+Helpers.swift"; sourceTree = "<group>"; };
+		8F3A1B2C3D4E5F6789012348 /* Support/RawLab-Bridging-Header.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = "RawLab-Bridging-Header.h"; sourceTree = "<group>"; };
+		8F3A1B2C3D4E5F678901234A /* sony2fuji.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = sony2fuji.xcframework; path = "../lutools/build-ios/sony2fuji.xcframework"; sourceTree = "<group>"; };
+		C9A1B2C3D4E5F60718293A4C /* Support/RawMetadataBridge.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = RawMetadataBridge.h; sourceTree = "<group>"; };
+		C9A1B2C3D4E5F60718293A4D /* Support/RawMetadataBridge.mm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.objcpp; path = RawMetadataBridge.mm; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		7A7847F15E616132CAD7AF18 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5925D383E992E267E84A557D /* Foundation.framework in Frameworks */,
+				8F3A1B2C3D4E5F678901234B /* sony2fuji.xcframework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8F3A1B2C3D4E5F678901234D /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				8F3A1B2C3D4E5F678901234C /* sony2fuji.xcframework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXGroup section */
+		03C5C556CA624B7388F5A53F /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				967181A1C76B4194B0C0185F /* Models */,
+				8F3A1B2C3D4E5F6789012347 /* RawProcessing */,
+				234ED6798A8A4780851F1B79 /* ViewModel */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		8F3A1B2C3D4E5F6789012347 /* RawProcessing */ = {
+			isa = PBXGroup;
+			children = (
+				8F3A1B2C3D4E5F6789012346 /* Core/RawProcessing/Sony2FujiProcessor.swift */,
+				8F3A1B2C3D4E5F6789012350 /* Core/RawProcessing/Sony2FujiProcessor+Helpers.swift */,
+			);
+			path = RawProcessing;
+			sourceTree = "<group>";
+		};
+		0DA7DEB0B4133F1EEE502181 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				BCB01F09DF53FD6D170136CB /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		0DAA7689F37A5648D3C8F238 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				0DA7DEB0B4133F1EEE502181 /* iOS */,
+				8F3A1B2C3D4E5F678901234A /* sony2fuji.xcframework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		1CBDC5191AF9405F9B637414 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				7ADA8D603BB120B2616B82E8 /* UI/ContentView.swift */,
+				7ADA789EA8FD48A0A2CFE618 /* UI/ContentView+Panels.swift */,
+				6CE93B9AEFEC48F9B6535407 /* UI/ContentView+Helpers.swift */,
+				1A2B3C4D5E6F7A8B9C0D1E2F /* UI/TickMarksView.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		234ED6798A8A4780851F1B79 /* ViewModel */ = {
+			isa = PBXGroup;
+			children = (
+				5BBA826F203D41BCC1DF31C0 /* Core/ViewModel/RawEditorViewModel.swift */,
+				893AFB855B8D4C46BF182760 /* Core/ViewModel/RawEditorViewModel+Rendering.swift */,
+				FEE59480F18546D2BD9AEB9E /* Core/ViewModel/RawEditorViewModel+LUT.swift */,
+				AE4383A5710944379318C704 /* Core/ViewModel/RawEditorViewModel+IO.swift */,
+			);
+			path = ViewModel;
+			sourceTree = "<group>";
+		};
+		2F109479FD08681A1F30E85C /* RawLab */ = {
+			isa = PBXGroup;
+			children = (
+				8F7749DA9EDF45519E2428F1 /* App */,
+				1CBDC5191AF9405F9B637414 /* UI */,
+				03C5C556CA624B7388F5A53F /* Core */,
+				8F3A1B2C3D4E5F6789012349 /* Support */,
+				55B1D2570BE3466BB45F7CD5 /* Resources */,
+			);
+			path = RawLab;
+			sourceTree = "<group>";
+		};
+		8F3A1B2C3D4E5F6789012349 /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				8F3A1B2C3D4E5F6789012348 /* Support/RawLab-Bridging-Header.h */,
+				C9A1B2C3D4E5F60718293A4C /* Support/RawMetadataBridge.h */,
+				C9A1B2C3D4E5F60718293A4D /* Support/RawMetadataBridge.mm */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
+		2F6D48C6086EC660301E288B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				ED52E5E1D6C957F64808BB11 /* RawLab.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		55B1D2570BE3466BB45F7CD5 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				CA5CD9BDDDA592CD1F77CFCB /* Resources/Info.plist */,
+				D71C4D9C452E6C484F74EDAB /* Resources/Assets.xcassets */,
+				A77856C73D4EEE89269EC86C /* X100VI_FLog2_FGamut_to_ETERNA-BB_BT.709_33grid_V.1.00.cube */,
+				788C90B58BF7C560F73C4E4E /* X100VI_FLog2_FGamut_to_ETERNA_BT.709_33grid_V.1.00.cube */,
+				C27C06BF4BCB890F305027DB /* X100VI_FLog2_FGamut_to_FLog2_BT.709_33grid_V.1.00.cube */,
+				F4277C52BDF5D163BC80D61A /* X100VI_FLog2_FGamut_to_WDR_BT.709_33grid_V.1.00.cube */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		8F7749DA9EDF45519E2428F1 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				A7B52131DB065AE51B1A552B /* App/RawLabApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		967181A1C76B4194B0C0185F /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				EFFDD45E0E844BA390EAB3E5 /* Core/Models/EditorMode.swift */,
+				75200EAB73DE45D5AC8120CC /* Core/Models/AdjustmentKind.swift */,
+				E032598E21034CC384DC2993 /* Core/Models/RawSettings.swift */,
+				99C86E9A92BE4E3A8BF782CB /* Core/Models/PhotoImportTypes.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		E067DA409E66CF448AAA9059 = {
+			isa = PBXGroup;
+			children = (
+				2F6D48C6086EC660301E288B /* Products */,
+				0DAA7689F37A5648D3C8F238 /* Frameworks */,
+				2F109479FD08681A1F30E85C /* RawLab */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		4CAC4510D72097AAADB14698 /* RawLab */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 86048109104C15A6E77F6FC2 /* Build configuration list for PBXNativeTarget "RawLab" */;
+			buildPhases = (
+				E20DD483661FD62C27502C63 /* Sources */,
+				7A7847F15E616132CAD7AF18 /* Frameworks */,
+				8F3A1B2C3D4E5F678901234D /* Embed Frameworks */,
+				DBB0E1C42A7E409E830998F8 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RawLab;
+			productName = RawLab;
+			productReference = ED52E5E1D6C957F64808BB11 /* RawLab.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1393227700EBE35817E89069 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					4CAC4510D72097AAADB14698 = {
+						DevelopmentTeam = 26C49A5JKY;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 414E6DDFAA24D0565622F7F1 /* Build configuration list for PBXProject "RawLab" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = E067DA409E66CF448AAA9059;
+			productRefGroup = 2F6D48C6086EC660301E288B /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				4CAC4510D72097AAADB14698 /* RawLab */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		DBB0E1C42A7E409E830998F8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				26F51EBF7B154D2F744F8B60 /* Resources/Assets.xcassets in Resources */,
+				47CDB4BD40F8E95C22A25C18 /* X100VI_FLog2_FGamut_to_ETERNA-BB_BT.709_33grid_V.1.00.cube in Resources */,
+				8AB36831B341E3B694012874 /* X100VI_FLog2_FGamut_to_ETERNA_BT.709_33grid_V.1.00.cube in Resources */,
+				CFFC01EE4735339101D924D2 /* X100VI_FLog2_FGamut_to_FLog2_BT.709_33grid_V.1.00.cube in Resources */,
+				224DEC4CD11A6EBF355EB5D5 /* X100VI_FLog2_FGamut_to_WDR_BT.709_33grid_V.1.00.cube in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		E20DD483661FD62C27502C63 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				474AC2ED2640F238B875DFBA /* App/RawLabApp.swift in Sources */,
+				54CCF4B9CD4492224FC36730 /* UI/ContentView.swift in Sources */,
+				0B1A0382CA7A4764A8AD3A12 /* UI/ContentView+Panels.swift in Sources */,
+				568E6B659A004F7792056543 /* UI/ContentView+Helpers.swift in Sources */,
+				2B3C4D5E6F7A8B9C0D1E2F3A /* UI/TickMarksView.swift in Sources */,
+				C9A1B2C3D4E5F60718293A4B /* Support/RawMetadataBridge.mm in Sources */,
+				1EC89F7C2A064F91BF79E1B6 /* Core/Models/EditorMode.swift in Sources */,
+				366A9A71BB194587A8AECB5A /* Core/Models/AdjustmentKind.swift in Sources */,
+				EDCB99B43F3C4149B2F7622B /* Core/Models/RawSettings.swift in Sources */,
+				2C5BFAB858B74B81AFAC16D0 /* Core/Models/PhotoImportTypes.swift in Sources */,
+				D883E2F5F205AC0EFBF9C319 /* Core/ViewModel/RawEditorViewModel.swift in Sources */,
+				7A32C02543E94D8D8AD059DA /* Core/ViewModel/RawEditorViewModel+Rendering.swift in Sources */,
+				F985B27612A241E0BF2D3B6E /* Core/ViewModel/RawEditorViewModel+LUT.swift in Sources */,
+				2A9B3E15E0704167ABE93960 /* Core/ViewModel/RawEditorViewModel+IO.swift in Sources */,
+				8F3A1B2C3D4E5F6789012345 /* Core/RawProcessing/Sony2FujiProcessor.swift in Sources */,
+				8F3A1B2C3D4E5F678901234F /* Core/RawProcessing/Sony2FujiProcessor+Helpers.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1FC38338F049575C61B7F4A1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		44D6BB686692202176039CF5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 26C49A5JKY;
+				GENERATE_INFOPLIST_FILE = NO;
+				HEADER_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../lutools/include";
+				INFOPLIST_FILE = RawLab/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.RawLab;
+				PRODUCT_NAME = RawLab;
+				SDKROOT = iphoneos;
+				SWIFT_OBJC_BRIDGING_HEADER = RawLab/Support/RawLab-Bridging-Header.h;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		76BB14E0851423A51D675ADD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 26C49A5JKY;
+				GENERATE_INFOPLIST_FILE = NO;
+				HEADER_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../lutools/include";
+				INFOPLIST_FILE = RawLab/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.RawLab;
+				PRODUCT_NAME = RawLab;
+				SDKROOT = iphoneos;
+				SWIFT_OBJC_BRIDGING_HEADER = RawLab/Support/RawLab-Bridging-Header.h;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		AB542FFD9CFBFB91194488B1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		414E6DDFAA24D0565622F7F1 /* Build configuration list for PBXProject "RawLab" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AB542FFD9CFBFB91194488B1 /* Debug */,
+				1FC38338F049575C61B7F4A1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		86048109104C15A6E77F6FC2 /* Build configuration list for PBXNativeTarget "RawLab" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				44D6BB686692202176039CF5 /* Release */,
+				76BB14E0851423A51D675ADD /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 1393227700EBE35817E89069 /* Project object */;
+}

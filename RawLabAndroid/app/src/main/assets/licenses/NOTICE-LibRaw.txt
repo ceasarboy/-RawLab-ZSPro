@@ -1,0 +1,14 @@
+This application embeds LibRaw 0.22.0 for RAW file decoding.
+
+Copyright (C) 2008-2025 LibRaw LLC (http://www.libraw.org)
+
+LibRaw is dual-licensed: you may use it under the terms of either the
+GNU Lesser General Public License version 2.1 (LICENSE-LibRaw-LGPL-2.1.txt)
+or the Common Development and Distribution License version 1.0
+(LICENSE-LibRaw-CDDL.txt), as published alongside the library.
+
+The complete, unmodified LibRaw 0.22.0 source tree is available from
+https://www.libraw.org (https://www.libraw.org/data/LibRaw-0.22.0.tar.gz,
+SHA-256 1071e6e8011593c366ffdadc3d3513f57c90202d526e133174945ec1dd53f2a1),
+and is also attached to the release this APK ships with. The build recipe
+(app/src/main/cpp/CMakeLists.txt) compiles it unmodified.

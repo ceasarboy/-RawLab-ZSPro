@@ -1,0 +1,138 @@
+<Window x:Class="RawLab.Windows.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:RawLab.Windows"
+    Title="RawLab · Windows" Width="1440" Height="920" MinWidth="1000" MinHeight="680" Icon="AppIcon.png" AllowDrop="True" Drop="FilesDropped" PreviewKeyDown="KeyPressed">
+
+  <Grid TextElement.Foreground="#ECEDEF">
+    <Grid.RowDefinitions><RowDefinition Height="64"/><RowDefinition Height="*"/><RowDefinition Height="36"/></Grid.RowDefinitions>
+    <Border Background="#222429" BorderBrush="#35373B" BorderThickness="0,0,0,1">
+      <DockPanel Margin="12,5">
+        <TextBlock Text="RAWLAB" FontWeight="Bold" FontSize="18" Foreground="{StaticResource Foreground}" VerticalAlignment="Center" Margin="6,0,22,0"/>
+        <Button x:Name="ExportButton" Click="ExportMenuClicked" DockPanel.Dock="Right" Style="{StaticResource ToolbarButton}" IsEnabled="False" ToolTip="导出原始分辨率照片" AutomationProperties.Name="导出">
+          <local:EditorIcon Kind="Export" Width="22" Height="22"/>
+          <Button.ContextMenu><ContextMenu><MenuItem x:Name="ExportJpeg" Header="导出 JPEG" Click="ExportJpegClicked" IsEnabled="False"/><MenuItem x:Name="ExportPng" Header="导出 16-bit PNG" Click="ExportPngClicked" IsEnabled="False"/></ContextMenu></Button.ContextMenu>
+        </Button>
+        <StackPanel Orientation="Horizontal">
+          <Button Click="OpenClicked" Style="{StaticResource ToolbarButton}" ToolTip="打开 RAW（Ctrl+O）" AutomationProperties.Name="打开 RAW"><local:EditorIcon Kind="Folder" Width="22" Height="22"/></Button>
+          <Button x:Name="LibraryToggleButton" Click="LibraryToggle" Style="{StaticResource ToolbarButton}" ToolTip="显示或隐藏照片目录" AutomationProperties.Name="文件树"><local:EditorIcon Kind="Library" Width="22" Height="22"/></Button>
+          <Border Width="1" Background="#474B53" Height="22" Margin="12,0"/>
+          <Button x:Name="CompareButton" Click="CompareClicked" Style="{StaticResource ToolbarButton}" ToolTip="对比模式：并排 / 滑动" AutomationProperties.Name="对比模式">
+            <local:EditorIcon Kind="Compare" Width="22" Height="22"/>
+            <Button.ContextMenu><ContextMenu><MenuItem x:Name="CompareOff" Header="关闭对比" IsCheckable="True" Click="CompareOffClicked"/><MenuItem x:Name="CompareSide" Header="并排对比" IsCheckable="True" IsChecked="True" Click="CompareSideClicked"/><MenuItem x:Name="CompareSwipe" Header="滑动对比" IsCheckable="True" Click="CompareSwipeClicked"/></ContextMenu></Button.ContextMenu>
+          </Button>
+          <Button Click="ZoomClicked" Style="{StaticResource ToolbarButton}" ToolTip="缩放与适合窗口" AutomationProperties.Name="缩放"><local:EditorIcon Kind="Zoom" Width="22" Height="22"/><Button.ContextMenu><ContextMenu><MenuItem Header="适合窗口" InputGestureText="F" Click="FitClicked"/><MenuItem Header="100% 实际像素" InputGestureText="1" Click="ActualClicked"/><Separator/><MenuItem Header="放大" InputGestureText="+" Click="ZoomInClicked"/><MenuItem Header="缩小" InputGestureText="−" Click="ZoomOutClicked"/></ContextMenu></Button.ContextMenu></Button>
+          <Button x:Name="ClippingButton" Click="ClippingClicked" Style="{StaticResource ToolbarButton}" ToolTip="显示高光与暗部裁切提示" AutomationProperties.Name="裁切提示"><local:EditorIcon Kind="Clipping" Width="22" Height="22"/></Button>
+          <Button x:Name="AdjustToggleButton" Click="DockToggle" Style="{StaticResource ToolbarButton}" ToolTip="显示或隐藏调整栏" AutomationProperties.Name="调整栏"><local:EditorIcon Kind="Adjust" Width="22" Height="22"/></Button>
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <Grid Grid.Row="1">
+      <Grid.ColumnDefinitions><ColumnDefinition x:Name="LibraryColumn" Width="260" MinWidth="180" MaxWidth="520"/><ColumnDefinition x:Name="LibrarySplitterColumn" Width="5"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <Border x:Name="LibraryPanel" Background="#202125" BorderBrush="#35373B" BorderThickness="0,0,1,0">
+        <DockPanel Margin="8">
+          <StackPanel DockPanel.Dock="Top"><TextBlock Text="照片目录" FontWeight="SemiBold" Margin="10,14,0,8"/><Button Content="添加目录" Click="AddFolderClicked"/></StackPanel>
+          <TextBlock DockPanel.Dock="Bottom" Text="右键根目录可移除；不会删除文件" Foreground="#95979F" FontSize="11" Margin="7" TextWrapping="Wrap"/>
+          <TreeView x:Name="Files" Background="Transparent" BorderThickness="0" TreeViewItem.Expanded="FolderExpanded" SelectedItemChanged="FileSelected" VirtualizingPanel.ScrollUnit="Pixel" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled" HorizontalContentAlignment="Stretch">
+            <TreeView.Resources>
+              <ResourceDictionary>
+              <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#494332"/>
+              <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#F2D259"/>
+              <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#34332D"/>
+              <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#F2D259"/>
+              <Style x:Key="PhotoGroupContainer" TargetType="TreeViewItem">
+                <Setter Property="Focusable" Value="False"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="TreeViewItem"><ContentPresenter ContentSource="Header" HorizontalAlignment="Stretch"/></ControlTemplate></Setter.Value></Setter>
+              </Style>
+              <local:PhotoTreeStyleSelector x:Key="PhotoTreeStyles" PhotoGroupStyle="{StaticResource PhotoGroupContainer}"/>
+              <HierarchicalDataTemplate DataType="{x:Type local:LibraryEntry}" ItemsSource="{Binding TreeChildren}">
+                <TextBlock Text="{Binding Name}" ToolTip="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,5"/>
+              </HierarchicalDataTemplate>
+              <DataTemplate DataType="{x:Type local:PhotoGroup}">
+                <ItemsControl ItemsSource="{Binding Photos}" HorizontalContentAlignment="Stretch" KeyboardNavigation.DirectionalNavigation="Contained">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><local:PhotoGridPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate><DataTemplate>
+                    <Button Click="PhotoSelected" ToolTip="{Binding Name}" AutomationProperties.Name="{Binding Name}" Margin="3" Padding="5" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+                      <Button.Style><Style TargetType="Button" BasedOn="{StaticResource QuietButton}"><Style.Triggers><DataTrigger Binding="{Binding IsSelected}" Value="True"><Setter Property="BorderBrush" Value="{StaticResource Accent}"/><Setter Property="Foreground" Value="{StaticResource Accent}"/></DataTrigger></Style.Triggers></Style></Button.Style>
+                      <Grid><Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="24"/></Grid.RowDefinitions>
+                        <Border Background="#191B20" CornerRadius="3"><local:EditorIcon Kind="Photo" Width="24" Height="24" TextElement.Foreground="#8E939F"/></Border>
+                        <Image Source="{Binding Thumbnail}" Stretch="Uniform" Loaded="ThumbnailLoaded" Unloaded="ThumbnailUnloaded"/>
+                        <TextBlock Grid.Row="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Stretch" TextAlignment="Center" Margin="1,4,1,0"/>
+                      </Grid>
+                    </Button>
+                  </DataTemplate></ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </DataTemplate>
+              </ResourceDictionary>
+            </TreeView.Resources>
+            <TreeView.ItemContainerStyleSelector><StaticResource ResourceKey="PhotoTreeStyles"/></TreeView.ItemContainerStyleSelector>
+            <TreeView.ContextMenu><ContextMenu><MenuItem Header="从列表移除根目录" Click="RemoveFolderClicked"/><MenuItem Header="刷新目录" Click="RefreshFolderClicked"/></ContextMenu></TreeView.ContextMenu>
+          </TreeView>
+        </DockPanel>
+      </Border>
+      <GridSplitter x:Name="LibrarySplitter" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" Cursor="SizeWE" ToolTip="拖动调整文件树宽度" AutomationProperties.Name="文件树宽度">
+        <GridSplitter.Style><Style TargetType="GridSplitter"><Setter Property="Background" Value="#292B30"/><Style.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#85816A"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter Property="Background" Value="#85816A"/></Trigger></Style.Triggers></Style></GridSplitter.Style>
+      </GridSplitter>
+      <Grid Grid.Column="2" x:Name="EditorArea">
+        <Grid.RowDefinitions><RowDefinition Height="*" MinHeight="160"/><RowDefinition x:Name="SplitterRow" Height="6"/><RowDefinition x:Name="DockRow" Height="264" MinHeight="216"/></Grid.RowDefinitions>
+        <Grid>
+          <Grid.ColumnDefinitions><ColumnDefinition x:Name="NeutralColumn" Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+          <local:PhotoCanvas x:Name="NeutralCanvas" Margin="0,0,2,0"/>
+          <local:PhotoCanvas x:Name="ResultCanvas" Grid.Column="1"/>
+          <Border x:Name="NeutralLabel" Background="#D923252A" CornerRadius="4" Padding="9,5" Margin="14" HorizontalAlignment="Left" VerticalAlignment="Bottom" Visibility="Collapsed" IsHitTestVisible="False"><TextBlock Text="中性" FontSize="12"/></Border>
+          <Border x:Name="FilmLabel" Grid.Column="1" Background="#D923252A" CornerRadius="4" Padding="9,5" Margin="14" HorizontalAlignment="Left" VerticalAlignment="Bottom" Visibility="Collapsed" IsHitTestVisible="False"><TextBlock x:Name="FilmLabelText" FontSize="12"/></Border>
+          <StackPanel x:Name="Welcome" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock Text="打开一张 RAW 照片" FontSize="24" Foreground="#D2D3D7" HorizontalAlignment="Center"/>
+            <TextBlock Text="拖入照片，或添加目录开始浏览" Foreground="{StaticResource Muted}" HorizontalAlignment="Center" Margin="0,14"/>
+            <Button Content="打开 RAW" Click="OpenClicked" HorizontalAlignment="Center" MinWidth="128" Margin="0,10"/>
+          </StackPanel>
+          <Border Grid.ColumnSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="14" Background="#D923252A" CornerRadius="7" Padding="8" Width="220">
+            <StackPanel><Button x:Name="HistogramButton" Click="HistogramClicked" HorizontalAlignment="Right" Style="{StaticResource QuietButton}" Padding="6,2" ToolTip="展开或收起直方图" AutomationProperties.Name="直方图"><local:EditorIcon Kind="Histogram" Width="18" Height="18"/></Button>
+              <StackPanel x:Name="HistogramPanel"><local:HistogramView x:Name="Histogram" Height="105" Margin="2,8"/><TextBlock x:Name="ClipStats" FontSize="11" Foreground="#A8ABB4"/></StackPanel>
+            </StackPanel>
+          </Border>
+        </Grid>
+        <GridSplitter Grid.Row="1" Height="6" HorizontalAlignment="Stretch" Background="#3E4046" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext"/>
+        <Border x:Name="AdjustmentPanel" Grid.Row="2" Background="#25272C" Padding="14,5,14,8">
+          <Grid>
+            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+            <DockPanel x:Name="DockHeader" LastChildFill="True">
+              <Button Content="收起" Click="DockToggle" DockPanel.Dock="Right" Padding="8,3" Style="{StaticResource QuietButton}"/>
+              <Button Content="全部重置" x:Name="ResetAllButton" Click="ResetAllClicked" DockPanel.Dock="Right" Padding="8,3" Style="{StaticResource QuietButton}"/>
+              <WrapPanel VerticalAlignment="Center"><TextBlock x:Name="ActiveFilm" FontWeight="SemiBold" VerticalAlignment="Center" Margin="4,0,16,0" MaxWidth="160" TextTrimming="CharacterEllipsis"/><TextBlock Text="曝光基准" VerticalAlignment="Center" Margin="5,0,8,0"/>
+              <ComboBox x:Name="ExposureMode" Width="130" SelectedIndex="0" SelectionChanged="ExposureModeChanged" VerticalAlignment="Center" AutomationProperties.Name="曝光基准"><ComboBoxItem Content="标准显影"/><ComboBoxItem Content="匹配内嵌预览"/><ComboBoxItem Content="传感器基准"/></ComboBox>
+              <TextBlock x:Name="BaselineLabel" Text="基础偏移 —" VerticalAlignment="Center" Foreground="#A8ABB4" Margin="12,0"/>
+              <Button Content="拍摄时白平衡" x:Name="AsShotButton" Click="AsShotClicked" Padding="8,3" Style="{StaticResource QuietButton}"/></WrapPanel>
+            </DockPanel>
+            <ScrollViewer x:Name="ToolsScroller" Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"><StackPanel x:Name="Tools" Orientation="Horizontal" HorizontalAlignment="Center">
+              <Button x:Name="FilmCategory" Click="FilmCategoryClicked" Style="{StaticResource ToolButton}" ToolTip="选择胶片模拟" AutomationProperties.Name="胶片">
+                <StackPanel>
+                  <Grid Width="40" Height="40"><local:AdjustmentRing x:Name="FilmCategoryRing"/><local:EditorIcon Kind="Film" Width="20" Height="20"/></Grid>
+                  <TextBlock Text="胶片" FontSize="11" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                </StackPanel>
+              </Button>
+            </StackPanel></ScrollViewer>
+            <WrapPanel x:Name="ParameterPanel" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,5">
+              <TextBlock x:Name="ParameterTitle" Width="65" VerticalAlignment="Center" FontWeight="SemiBold"/>
+              <Slider x:Name="ValueSlider" Width="210" Minimum="0" Maximum="1" ValueChanged="SliderChanged" AutomationProperties.Name="调整值"/>
+              <TextBox x:Name="ValueText" Width="78" Margin="10,0,3,0" LostKeyboardFocus="ValueCommitted" KeyDown="ValueKeyDown" AutomationProperties.Name="调整数值" Typography.NumeralAlignment="Tabular"/>
+              <TextBlock x:Name="ParameterUnit" Width="24" VerticalAlignment="Center"/>
+              <Button x:Name="ResetParameterButton" Click="ResetParameterClicked" ToolTip="重置当前参数" AutomationProperties.Name="重置当前参数" Padding="8,3" Style="{StaticResource QuietButton}"><local:EditorIcon Kind="Reset" Width="18" Height="18"/></Button>
+              <Button x:Name="ResetGroupButton" Content="重置分组" Click="ResetGroupClicked" Padding="8,3" Style="{StaticResource QuietButton}"/>
+            </WrapPanel>
+            <DockPanel x:Name="FilmPanel" Grid.Row="2" Visibility="Collapsed" Margin="0,3,0,0">
+              <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" VerticalContentAlignment="Center"><StackPanel x:Name="FilmStrip" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center"/></ScrollViewer>
+            </DockPanel>
+          </Grid>
+        </Border>
+      </Grid>
+    </Grid>
+    <Border Grid.Row="2" Background="#222429" BorderBrush="#35373B" BorderThickness="0,1,0,0">
+      <DockPanel Margin="14,0">
+        <ComboBox x:Name="GpuMode" DockPanel.Dock="Right" Width="116" SelectedIndex="0" SelectionChanged="GpuModeChanged" Margin="10,2,0,2" AutomationProperties.Name="渲染加速"><ComboBoxItem Content="GPU 自动"/><ComboBoxItem Content="仅 CPU"/><ComboBoxItem Content="强制 GPU"/></ComboBox>
+        <TextBlock x:Name="BackendLabel" Text="Windows · GPU 自动 · sRGB" Foreground="{StaticResource Muted}" DockPanel.Dock="Right" VerticalAlignment="Center"/>
+        <Button x:Name="RetryButton" Content="重新显影" Click="RetryClicked" DockPanel.Dock="Right" Visibility="Collapsed" Style="{StaticResource QuietButton}" Padding="8,2" MinHeight="26" Margin="6,0"/>
+        <ProgressBar x:Name="BusyIndicator" Width="34" Height="3" Margin="0,0,10,0" Foreground="{StaticResource Accent}" Background="#474B53" IsIndeterminate="True" Visibility="Collapsed"/>
+        <TextBlock x:Name="Status" Text="就绪" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" AutomationProperties.LiveSetting="Polite"/>
+      </DockPanel>
+    </Border>
+  </Grid>
+</Window>
