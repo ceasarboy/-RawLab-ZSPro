@@ -1,0 +1,93 @@
+RawLab Android uses the repository's shared Sony2Fuji C++ core.
+
+Lens correction statically links Lensfun 0.3.4 (LGPL-3.0-or-later), GLib 2.84.4
+(LGPL-2.1-or-later), PCRE2 10.44 (BSD), proxy-libintl (LGPL-2.0-or-later) and
+GNU libiconv/libcharset 1.18 (LGPL-2.1-or-later) into librawlab-jni.so.
+Original license texts and attribution are in assets/licenses/lensfun.
+The unmodified offline DB1 snapshot (2026-10-12) is CC BY-SA 3.0, separate from
+the library license; it ships in assets/Lensfun. Sources and SHA256 pins:
+lutools/cmake/lens-dependencies.json. Build: lutools/cmake/build-lens-dependencies.py.
+https://lensfun.github.io/ and https://gitlab.gnome.org/GNOME/glib
+https://github.com/PCRE2Project/pcre2 and https://github.com/frida/proxy-libintl
+https://www.gnu.org/software/libiconv/
+
+
+Release builds include the Alibaba Cloud RUM Android SDK 2.3.2
+(com.aliyun.rum:alibabacloud-android-rum-sdk:2.3.2 from https://maven.aliyun.com/,
+SHA-256 681592df6727230a4ff7aef951636afb7d566fbcf486b15b25294b29154c5b1f; its Maven
+POM declares the MIT License). It is combined with RawLab under
+RawLab-Aliyun-RUM-Exception.txt and used only for the usage analytics described in
+About, with a bundled configuration that enables custom events only. Debug builds do
+not include it. Project: https://github.com/aliyun/alibabacloud-rum-android-buildpack
+
+OpenCV 4.12.0 (core/imgproc): https://github.com/opencv/opencv/tree/4.12.0
+Apache 2.0; see OpenCV-LICENSE.txt.
+wavelib: https://github.com/rafat/wavelib, BSD 3-Clause; see wavelib-LICENSE.txt.
+Both are statically linked for linear-light wavelet denoising. Exact revisions
+and archive hashes are pinned in lutools/cmake/denoise-dependencies.cmake.
+Local stationary-wavelet column and inverse-transform optimizations are in
+lutools/cmake/wavelib-swt-columns.c.inc and wavelib-iswt2.c.inc.
+
+LibTIFF 4.7.1: https://libtiff.gitlab.io/libtiff/, libtiff-LICENSE.md.
+Only the static TIFF directory/strip writer is linked for rendered DNG output;
+optional codecs and tools are disabled.
+
+LibRaw 0.22.2: https://github.com/LibRaw/LibRaw/tree/0.22.2
+Source archive: https://www.libraw.org/data/LibRaw-0.22.2.tar.gz
+SHA-256: de86b035655accff8d4010f1a221fdf50d353cb7b1422ba26f14a0db92612cfa
+Built from patched source as libraw.so; Android CMake build configuration
+is supplied in app/src/main/cpp/CMakeLists.txt. LGPL/CDDL license choices and
+copyright notices are included in this directory. Sigma X3F tools are enabled;
+Roland Karlsson's BSD-style notice is in LibRaw-X3F-BSD.txt. JPEG-compressed lossy
+DNG uses statically linked libjpeg-turbo 3.1.3 (JPEG8 ABI), with IJG/BSD/zlib notices
+in libjpeg-turbo-LICENSE.md and libjpeg-turbo-README.ijg. Optional LCMS, JasPer and
+RawSpeed integrations are not compiled into LibRaw here.
+
+The patched LibRaw is used under its LGPL 2.1 option. The Nikon HE decoder is
+a local C++ adaptation of Nicolai Buchwitz's dnglab commit
+0f044c2c30d78c4ed5fcede6ab4e8db893d566f6 and Dmitri Sotnikov's LibRaw PR 826,
+with RdWing's reconstruction/transfer corrections. This decoder is LGPL 2.1,
+not CDDL. Source links and changes: nikon-he/README.md.
+Full license: nikon-he/LICENSE.LGPL-2.1.
+
+This product includes DNG technology under license by Adobe.
+Adobe DNG SDK 1.7.1 Build 2724 and its bundled JPEG XL/Brotli/Highway/skcms
+sources are pinned by lutools/cmake/dng-sdk.cmake and statically linked for
+JPEG XL DNG decoding. The SDK's XMP editing and command-line validator are
+disabled; missing qDNGUseXMP guards in dng_jxl.cpp are added by the local adapter.
+Source: https://download.adobe.com/pub/adobe/dng/dng_sdk_1_7_1_2724_20260908.zip
+Full notices: Adobe-DNG-SDK-1.7.1-LICENSE.txt, JPEG-XL-LICENSE.txt,
+Brotli-LICENSE.txt, Highway-LICENSE.txt, Highway-LICENSE-BSD3.txt and skcms-LICENSE.txt.
+
+Local crop, X-Trans concurrency and Nikon recognition changes are applied by
+lutools/cmake/patch-libraw.cmake. Four exact-model camera matrices are adapted
+from RawSpeed contributors' cameras.xml at:
+https://github.com/darktable-org/rawspeed/blob/c835b05aecfacb7343f7c424abd620aa12116c3f/data/cameras.xml
+The adapted data remains under CC BY-SA 3.0:
+https://creativecommons.org/licenses/by-sa/3.0/
+Source: lutools/third_party/rawspeed-camera-calibration.inc in the RawLab repository.
+Changes: extraction into LibRaw table syntax; black/white levels remain metadata-driven.
+No RawSpeed decoder code is included.
+R6 III layout/matrix evidence is from ErikCJohansson's contribution at
+https://github.com/LibRaw/LibRaw/issues/821; the parser reuses LibRaw v12 offsets.
+This local correction does not imply upstream R6 III support.
+
+The core's temperature/xy calculation includes Adobe DNG SDK-derived code;
+its notice is provided as Adobe-DNG-SDK-LICENSE.txt. Embedded JPEG reading and
+JPEG output use bundled stb headers; their notices are included separately.
+zlib is provided by the Android system, not bundled as a separate library.
+libc++_shared.so is supplied by Android NDK 27.2.12479018; its license is
+included as NDK-libcxx-NOTICE in the generated APK assets.
+
+The shared DCP compiler uses JSON for Modern C++ (Niels Lohmann), under MIT.
+Its original notice is included as licenses/nlohmann-JSON-MIT.txt.
+
+Film LUTs and generated film-label artwork are reused unchanged from this
+repository. The artwork is not an official product image or brand endorsement.
+See RawLabMac/Resources/FilmIcons/generated-set-a.md and generated-set-b.md
+for artwork provenance. Film output follows lutools/docs/color-contract.md.
+
+Sony ARW6 decoding and A7 V metadata are backported from LibRaw e419de0;
+A1 II, EOS R50 V and PowerShot V1 metadata come from upstream PRs 775/846,
+784 and 856 under the original LibRaw LGPL/CDDL terms. Pinned sources and
+format boundaries: docs/reference/raw-format-support.md.

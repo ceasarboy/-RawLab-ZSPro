@@ -1,0 +1,176 @@
+# Sony2Fuji / RawLab Core
+
+将跨品牌 RAW 显影后应用富士 F-Log2 LUT 的 C++ 核心和命令行工具，历史 API 名称保留 `sony2fuji`。
+
+A C++ core and CLI for developing cross-brand RAW files and applying Fujifilm F-Log2 LUTs. The historical `sony2fuji` API names remain unchanged.
+
+原生桌面体验见 [RawLab Mac](../RawLabMac/README.md)。色彩流程与验收边界以[照片渲染约定](docs/color-contract.md)为准。
+
+See [RawLab Mac](../RawLabMac/README.md) for the native desktop editor. The [photo rendering contract](docs/color-contract.md) defines the color pipeline and its verification limits.
+
+## 功能 / Features
+
+- LibRaw 解码、浮点相机矩阵、线性曝光与白平衡，保留负值和超白值。
+  LibRaw decoding, floating-point camera matrices, and linear exposure/white balance preserve negative and super-white working values.
+- F-Gamut 转换、F-Log2 编码和 CUBE 三线性插值，支持中性与胶片结果混合。
+  F-Gamut conversion, F-Log2 encoding and trilinear CUBE interpolation, with neutral/film blending.
+- 可选[通用 LUT 准备工具](docs/lut-preparation.md)：按明确的输入输出色彩约定适配外部 LUT，适配 DCP 外观，并检查烘焙误差。
+  Optional offline LUT preparation supports explicit color contracts, DCP appearance adaptation and measured baking error without changing native dependencies.
+- DCP 可编译为 `.rlook`，由共享核心在 CPU / Metal 上直接计算，避免整张 RGB CUBE 的烘焙误差；支持 D65 HueSatMap 校准阶段，桌面导入同时支持 `.cube` 和 `.rlook`。
+- 输出 JPEG 与真正的 16-bit PNG；共享 C API 供 Mac、iOS 和 Android 集成。
+  JPEG and genuine 16-bit PNG output, with a shared C API for Mac, iOS and Android integration.
+- Apple 平台提供 Metal 照片处理；Android 提供 OpenGL ES LUT 后端。RAW 解包和去马赛克仍由 CPU 执行。
+  Metal photo processing is available on Apple platforms; Android has an OpenGL ES LUT backend. RAW unpacking and demosaicing remain on the CPU.
+
+## 架构与目录 / Architecture and Layout
+
+```text
+Mac / iOS / Android / CLI
+          |
+     Shared C API
+          |
+  LibRaw -> Linear RGB -> F-Gamut / F-Log2 -> LUT -> Display / Export
+```
+
+| 路径 / Path | 用途 / Purpose |
+| --- | --- |
+| `src/core/` | RAW、白平衡、曝光、色域和 LUT / RAW, WB, exposure, gamut and LUT processing |
+| `src/ffi/` | 共享 C API 实现 / Shared C API implementation |
+| `src/gpu/` | Metal / OpenGL ES 后端 / Metal and OpenGL ES backends |
+| `src/cli/` | 命令行入口 / CLI entry point |
+| `include/sony2fuji/` | 公共 C/C++ 头文件 / Public C/C++ headers |
+| `platform/` | 移动端集成 / Mobile integration |
+| `tests/` | 数值、RAW 和 GPU 回归 / Numerical, RAW and GPU regressions |
+| `lutprep/` | 可选的桌面 LUT 色彩适配工具 / Optional desktop LUT preparation |
+| `F-Log2/`, `flog-2-new/` | LUT 文件和说明 / LUT assets and documentation |
+| `examples/`, `docs/` | 示例与文档 / Examples and documentation |
+
+## 构建依赖 / Dependencies
+
+- CMake 3.15+、C++17 编译器、pkg-config、LibRaw 0.22.2+、zlib、libtiff 4.7.1+。
+  CMake 3.15+, a C++17 compiler, pkg-config, LibRaw 0.22.2+, zlib and libtiff 4.7.1+.
+  Mobile/Windows builds use pinned static libtiff 4.7.1; desktop builds can select
+  `SONY2FUJI_BUILD_TIFF_DEPS=ON` instead of using the system `libtiff-4` package.
+- stb 图像编解码头文件随源码提供；OpenMP 为可选的 CPU 并行支持。
+  stb image codec headers are included in the source; OpenMP is optional for CPU parallelism.
+- Metal 构建需要 Apple 开发工具。移动端还需要对应 SDK 和目标平台的 LibRaw，不能链接宿主机库。
+  Metal builds require Apple developer tools. Mobile builds also require the target SDK and target-platform LibRaw, not the host library.
+
+## 快速开始 / Quick Start
+
+以下命令在仓库根目录运行。构建 CLI：
+
+Run these commands from the repository root to build the CLI:
+
+```bash
+cmake -S lutools -B lutools/build -DCMAKE_BUILD_TYPE=Release
+cmake --build lutools/build -j 6
+mkdir -p output
+```
+
+在当前工作空间的 macOS 环境中，必要时先设置 `DEVELOPER_DIR=/Library/Developer/CommandLineTools`。Mac 应用的 SDK 和打包流程由 `bash RawLabMac/build.sh` 管理。
+
+In this macOS workspace, set `DEVELOPER_DIR=/Library/Developer/CommandLineTools` when needed. The Mac app's SDK selection and packaging are handled by `bash RawLabMac/build.sh`.
+
+应用仓库内的 ETERNA LUT：
+
+Apply the bundled ETERNA LUT:
+
+```bash
+lutools/build/sony2fuji RawLab/RawLab/Resources/Samples/DSC09067.ARW \
+  -l lutools/flog-2-new/FLog2_to_ETERNA_65grid_V.1.00.cube \
+  -o output/eterna.jpg
+```
+
+输出中性参考或调整曝光基准：
+
+Render a neutral reference or select an exposure baseline:
+
+```bash
+lutools/build/sony2fuji input.ARW --no-lut -o output/neutral.png
+lutools/build/sony2fuji input.ARW --raw-exposure preview --exposure 0.5 -o output/preview.jpg
+```
+
+CLI 每次接收一个输入文件，批处理需要 shell 循环，而不是把多个 RAW 作为位置参数：
+
+The CLI accepts one input file per invocation. Use a shell loop for a batch instead of passing multiple RAW paths as positional arguments:
+
+```bash
+for raw in lutools/examples/*.ARW; do
+  [ -f "$raw" ] || continue
+  name="$(basename "$raw" .ARW)"
+  lutools/build/sony2fuji "$raw" \
+    -l lutools/flog-2-new/FLog2_to_ETERNA_65grid_V.1.00.cube \
+    -o "output/$name.jpg"
+done
+```
+
+## RAW 与 LUT 兼容性 / RAW and LUT Compatibility
+
+RAW 格式支持取决于 LibRaw。Panasonic S5 II RW2 的 encoding 8 需要 LibRaw 0.22 系列；0.21.x 能识别相机却会错误解码为噪点。可通过 `RAWLAB_TEST_RAW=/path/to/sample.rw2 bash lutools/test.sh` 运行真实 RAW 回归（包括解码错误检查），照片不纳入仓库。Sony ARW、Panasonic S5 II RW2 和本地可选 DJI DNG 的验证不代表所有品牌、机型或光源都经过颜色标定。
+
+RAW format support depends on LibRaw. Panasonic S5 II RW2 encoding 8 requires the LibRaw 0.22 series; 0.21.x identifies the camera but decodes it as noise. Run real-RAW regressions, including decoder error checks, with `RAWLAB_TEST_RAW=/path/to/sample.rw2 bash lutools/test.sh`; photos are not bundled. Validation with Sony ARW, Panasonic S5 II RW2 and optional local DJI DNG fixtures does not establish color calibration for every brand, model or illuminant.
+
+源码依赖构建还会应用 `cmake/patch-libraw.cmake` 中的相机校准、元数据、裁切和 X-Trans 并发修复。系统库不自动获得这些补丁；外部/iOS LibRaw 构建也需应用同一脚本并重新编译。逐样片验证和仍不支持的 HE* 压缩见[兼容性报告](../docs/archive/compatibility/raw-2026-10-09.md)。
+
+Source dependency builds also apply `cmake/patch-libraw.cmake` for calibration, metadata, crop and X-Trans concurrency fixes. System libraries do not receive these patches automatically; external/iOS LibRaw builds must apply the same script before rebuilding. See the [compatibility report](../docs/archive/compatibility/raw-2026-10-09.md) for sample-level validation and unsupported HE* compression.
+
+照片 API 接受 F-Gamut / F-Log、F-Gamut / F-Log2，以及 F-Gamut C / F-Log2C 输入，要求声明 BT.709 输出色域。普通外观名称不设白名单，按应用 sRGB 显示约定解释；明确的 F-Log/F-Log2/F-Log2C 输出会先解码，再经过中性显示转换。校验依据声明，不分析表格的实际传递函数。内置胶片列表仍排除技术转换和 WDR，但可以自定义导入。
+
+The photo API accepts F-Gamut / F-Log, F-Gamut / F-Log2 and F-Gamut C / F-Log2C inputs with declared BT.709 output gamut. Nonempty named looks use the application's display-sRGB convention without a film-name allowlist. Explicit F-Log/F-Log2/F-Log2C outputs are decoded and neutrally display-rendered. Validation checks declarations, not table behavior. Technical transforms and WDR remain absent from built-in film lists but can be imported as custom looks.
+
+F-Log/F-Log2/F-Log2C 输入和 Log 输出均已接入 GPU。Auto 在后端失败时回退 CPU，Force 要求实际 GPU 执行。Metal 与 Android GLES 已运行验证，D3D11 对应改动尚待 Windows 验证。未知输入输出不能猜测，缺少兼容声明的 LUT 仍会拒绝。
+
+F-Log/F-Log2/F-Log2C inputs and Log outputs have GPU implementations. Auto falls back on backend failure; Force requires actual GPU execution. Metal and Android GLES were exercised; the matching D3D11 changes await Windows verification. Missing or incompatible input declarations remain unsupported.
+
+其他约定的 LUT 先通过[准备工具](docs/lut-preparation.md)转换为兼容 CUBE。macOS/Android/Windows 可导入兼容文件；iOS 仍使用内置资源，本轮没有新增文件导入界面。
+
+Prepare other explicitly described LUTs with the offline adapter before import. macOS/Android/Windows accept compatible custom files; iOS still uses bundled resources and has no new custom-file picker in this change.
+
+## 渲染流程 / Rendering Pipeline
+
+1. LibRaw 处理黑电平、有效区域、相机白平衡和去马赛克；不启用自动亮度。
+   LibRaw handles black levels, the active area, camera-space WB and demosaicing without auto brightness.
+2. 转成浮点线性 RGB，应用固定基础曝光及用户输入调整，保留工作范围。
+   Convert to floating-point linear RGB and apply the fixed exposure baseline and user input adjustments without prematurely clipping the working range.
+3. 胶片分支转换至 F-Gamut / F-Log2 后查 LUT；中性分支使用保留高光层次的显示映射。
+   The film branch converts to F-Gamut / F-Log2 before LUT lookup; the neutral branch uses a highlight-preserving display mapping.
+4. 混合强度、成片微调和编码导出。精确渲染与导出不会使用低质量交互 RAW 缓存。
+   Apply strength blending, finishing adjustments and output encoding. Exact rendering and export never reuse reduced-quality interactive RAW caches.
+
+## 验证 / Verification
+
+```bash
+bash lutools/test.sh
+```
+
+该脚本配置 `lutools/build-verify`、构建并运行 CTest。可在支持 Metal 的 Mac 上显式运行通用 LUT 的 GPU/CPU 对比：
+
+The script configures `lutools/build-verify`, builds it and runs CTest. On a Metal-capable Mac, explicitly enable the generic LUT GPU/CPU comparisons:
+
+```bash
+SONY2FUJI_TEST_GPU=1 ctest --test-dir lutools/build-verify -R color_contracts --output-on-failure
+```
+
+缺少可选 RAW 样片时会跳过对应测试；不要将缺失覆盖或本地成功当成所有移动设备验证。
+
+Tests requiring optional RAW fixtures are omitted when those files are absent. Missing coverage or local success is not evidence that every mobile device has been validated.
+
+## 集成与参考 / Integration and References
+
+- [Mac 客户端 / Mac editor](../RawLabMac/README.md)
+- [平台集成说明 / Platform integration](docs/platform-integration.md)
+- [iOS 指南 / iOS guide](platform/ios/README.md)
+- [Android 指南 / Android guide](platform/android/README.md)
+- [富士 F-Log2 LUT 说明 / Fujifilm F-Log2 LUT overview](F-Log2/F-Log2_LUT_overview_Ver.1.1E.pdf)
+- [LUTCalc 参考实现 / LUTCalc reference implementation](https://github.com/cameramanben/LUTCalc)
+
+## 许可证与致谢 / License and Acknowledgments
+
+原创代码采用 [GPLv3 only](../LICENSE)（`GPL-3.0-only`）。第三方代码和素材保留各自许可证，详见[许可与归属说明](../docs/reference/licensing.md)。
+
+Original code is distributed under [GPLv3 only](../LICENSE) (`GPL-3.0-only`). Third-party code and assets retain their licenses; see [licensing and attribution](../docs/reference/licensing.md).
+
+感谢 LibRaw、stb 和 LUTCalc 提供 RAW 处理、图像编解码及 LUT 参考实现。
+
+Thanks to LibRaw, stb and LUTCalc for RAW processing, image codecs and LUT reference implementations.

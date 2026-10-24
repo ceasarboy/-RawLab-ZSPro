@@ -1,0 +1,175 @@
+using System.IO;
+using System.Windows;
+using System.Windows.Media;
+using System.Windows.Threading;
+
+namespace RawLab.Windows;
+
+public partial class MainWindow
+{
+    private EditStore? editStore;
+    private bool editDirty;
+    private string? saveNoticeKey;
+    private readonly DispatcherTimer editSaveTimer = new() { Interval = TimeSpan.FromMilliseconds(400) };
+    private readonly DispatcherTimer editNoticeTimer = new() { Interval = TimeSpan.FromSeconds(3) };
+    private readonly BatchJournal batchJournal = new(BatchJournal.DefaultDirectory);
+    private BatchJob? previousBatch;
+    private BatchExportWindow? batchWindow;
+    private bool LookAvailable => lut == null || File.Exists(lut);
+    private BatchJob? CurrentBatch => batchWindow?.Job ?? previousBatch;
+
+    private void InitializeEditWorkflow()
+    {
+        editSaveTimer.Tick += (_, _) => { editSaveTimer.Stop(); SaveEdits(); };
+        editNoticeTimer.Tick += (_, _) => { editNoticeTimer.Stop(); if (RetrySave.Visibility != Visibility.Visible) {SaveState.Text = "";saveNoticeKey=null;} };
+        Deactivated += (_, _) => SaveEdits();
+        try { editStore = new EditStore(EditStore.DefaultDirectory); }
+        catch (Exception error) { SetSaveNotice("无法读取调整记录", error.Message, true); }
+        try { previousBatch = batchJournal.Load(); }
+        catch (Exception error) { Report(new IOException(Loc.Format("无法读取上次批量任务：{0}", error.Message), error)); }
+        RefreshBatchNotice(); UpdateBusy();
+    }
+
+    private void MarkEdited()
+    {
+        ++editRevision;
+        if (!ready || syncing || file == null) return;
+        editDirty = true;
+        if (RetrySave.Visibility != Visibility.Visible) {SaveState.Text = "";saveNoticeKey=null;}
+        editSaveTimer.Stop(); editSaveTimer.Start();
+    }
+
+    private bool SaveEdits()
+    {
+        editSaveTimer.Stop();
+        if (!editDirty || file == null) return true;
+        try
+        {
+            editStore ??= new EditStore(EditStore.DefaultDirectory);
+            editStore.Save(file, settings.Capture(), CurrentLookIdentity());
+            editDirty = false; SetSaveNotice("调整已保存", "", false);
+            return true;
+        }
+        catch (Exception error) { SetSaveNotice("调整未保存 · 重试", error.Message, true); return false; }
+    }
+
+    internal string? CurrentLookIdentity()
+    {
+        if (settings.Recipe is {} recipe) return "recipe:" + recipe.Id;
+        if (lut != null && StringComparer.OrdinalIgnoreCase.Equals(Path.GetDirectoryName(lut), Path.Combine(AppContext.BaseDirectory, "LUTs")))
+            return "builtin:" + Path.GetFileName(lut);
+        return lookLibrary?.IdentityForPath(lut) ?? lut;
+    }
+
+    internal void SaveSettingsCopy(string input, AdjustmentSnapshot snapshot, string? look)
+    {
+        SaveSettingsCopies([input], snapshot, look);
+    }
+
+    internal void SaveSettingsCopies(IEnumerable<string> inputs, AdjustmentSnapshot snapshot, string? look)
+    {
+        editStore ??= new EditStore(EditStore.DefaultDirectory);
+        editStore.Save(inputs, snapshot, look);
+    }
+
+    private void RestoreEdits(string input)
+    {
+        var saved = editStore?.Find(input);
+        settings = saved?.Settings.Restore() ?? new Adjustments();
+        lut = saved == null ? films.FirstOrDefault(f => f.Name == "PROVIA")?.Path : lookLibrary?.ResolveIdentity(saved.Look) ?? saved.Look;
+        if (settings.Recipe is {} recipe) lut = recipe.LutPath;
+        if (lut?.StartsWith("builtin:", StringComparison.Ordinal) == true)
+            lut = Path.Combine(AppContext.BaseDirectory, "LUTs", Path.GetFileName(lut[8..]));
+        if (settings.MasterRecipeID == null && lut != null && !films.Any(f => StringComparer.OrdinalIgnoreCase.Equals(f.Path, lut)))
+        {
+            films.Add(new(Path.GetFileNameWithoutExtension(lut), lut, null)); BuildFilms();
+        }
+        editDirty = false;
+        if (saved != null) SetSaveNotice("已恢复上次调整", "", false);
+        else if (RetrySave.Visibility != Visibility.Visible) {SaveState.Text = "";saveNoticeKey=null;}
+    }
+
+    private void RefreshSaveNotice(){if(saveNoticeKey!=null)SaveState.Text=Loc.Text(saveNoticeKey);}
+    private void SetSaveNotice(string key, string detail, bool failed)
+    {
+        saveNoticeKey=key;SaveState.Text = Loc.Text(key); SaveState.ToolTip = detail;
+        SaveState.SetResourceReference(System.Windows.Controls.TextBlock.ForegroundProperty,failed ? "ErrorForeground" : "Muted");
+        RetrySave.Visibility = failed ? Visibility.Visible : Visibility.Collapsed;
+        editNoticeTimer.Stop(); if (!failed) editNoticeTimer.Start();
+    }
+    private void RetrySaveClicked(object sender, RoutedEventArgs e)
+    {
+        if (editDirty) { SaveEdits(); return; }
+        try { editStore = new EditStore(EditStore.DefaultDirectory); SetSaveNotice("调整记录可用", "", false); }
+        catch (Exception error) { SetSaveNotice("无法读取调整记录", error.Message, true); }
+    }
+
+    private void BatchExportClicked(object sender, RoutedEventArgs e)
+    {
+        if (file == null || !exactReady || scheduler.Busy || exporting || batchWindow?.Busy==true || !LookAvailable) return;
+        var previous = CurrentBatch;
+        if (previous is { Started: true } && previous.SucceededCount < previous.SelectedCount)
+        {
+            var answer = MessageBox.Show(this, Loc.Text("继续查看上次任务，或保留已导出文件并新建任务。"),
+                Loc.Text("上次批量任务尚未完成"), MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+            if (answer == MessageBoxResult.Cancel) return;
+            if (answer == MessageBoxResult.Yes) { ShowBatchClicked(sender, e); return; }
+        }
+        try
+        {
+            if (batchWindow != null) { batchWindow.Close();if(batchWindow?.IsVisible==true)return;batchWindow=null; }
+            if (previous != null) batchJournal.Discard(previous);
+            var job = BatchJob.Create(file, settings.Capture(), lut, LookTitle);
+            batchJournal.FreezeLook(job); batchJournal.Save(job); previousBatch = job;
+            ShowBatch(job);
+        }
+        catch (Exception error) { Report(error); }
+    }
+
+    private void ShowBatchClicked(object sender, RoutedEventArgs e)
+    {
+        if(CurrentBatch==null)return;
+        if(!ResolveTransformDraft())return;
+        if (batchWindow != null) { batchWindow.Activate(); return; }
+        if (previousBatch != null) ShowBatch(previousBatch);
+    }
+    private void ShowBatch(BatchJob job)
+    {
+        var window = new BatchExportWindow(job, batchJournal) { Owner = this };
+        batchWindow = window;
+        window.RunCompleted += (before, after, runFailedCount) =>
+        {
+            var succeeded = Math.Clamp(after.SucceededCount - before.SucceededCount, 0, UsageAnalytics.MaxCount);
+            var failed = Math.Clamp(runFailedCount, 0, UsageAnalytics.MaxCount);
+            var outcome = after.Interrupted ? BatchOutcome.Interrupted : after.Cancelled ? BatchOutcome.Cancelled :
+                failed > 0 || after.FailedCount > 0 ? BatchOutcome.Partial : BatchOutcome.Completed;
+            usageAnalytics.Record(new BatchExportCompletedEvent(outcome, succeeded, failed));
+        };
+        window.BusyChanged += active => {
+            var closeFailed=!active && closing && window.CloseFailed;
+            if(closeFailed){RecoverFailedClose(window);return;}
+            if(!active && !exporting && !closing)ResumePreview();
+            RefreshControls(); RefreshBatchNotice();
+            if(!active && closing && scheduler.Active==null)FinishClose();
+        };
+        window.Closed += (_, _) => {
+            previousBatch = window.Discarded ? null : window.Job;
+            if (batchWindow == window) batchWindow = null;
+            RefreshBatchNotice(); UpdateBusy();
+        };
+        window.Show(); RefreshBatchNotice(); UpdateBusy();
+    }
+    private void RecoverFailedClose(BatchExportWindow window)
+    {
+        closing=false;IsEnabled=true;
+        ResumePreview();QueueThumbnailRefresh();
+        RefreshControls();RefreshBatchNotice();
+        SetStatus(window.Job.Error ?? Loc.Text("任务未保存。"),true);
+    }
+    private void RefreshBatchNotice()
+    {
+        var job = CurrentBatch;
+        BatchNotice.Visibility = job is { Started: true } && job.SucceededCount < job.SelectedCount ? Visibility.Visible : Visibility.Collapsed;
+        ViewBatchMenu.IsEnabled = job != null;
+    }
+}

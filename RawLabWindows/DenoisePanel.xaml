@@ -1,0 +1,19 @@
+<UserControl x:Class="RawLab.Windows.DenoisePanel"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:local="clr-namespace:RawLab.Windows" MaxWidth="720">
+ <StackPanel Margin="4">
+  <WrapPanel Margin="0,0,0,8">
+   <CheckBox x:Name="EnabledBox" Content="{DynamicResource '降噪'}" VerticalAlignment="Center" Checked="EnabledChanged" Unchecked="EnabledChanged" AutomationProperties.Name="{DynamicResource '降噪'}"/>
+   <ComboBox x:Name="PresetBox" MinWidth="140" MaxWidth="280" SelectionChanged="PresetChanged" AutomationProperties.Name="{DynamicResource '降噪预设'}" Margin="12,0">
+    <ComboBoxItem Content="{DynamicResource '细节优先'}"/><ComboBoxItem Content="{DynamicResource '去噪优先'}"/><ComboBoxItem Content="{DynamicResource '自定义'}"/>
+   </ComboBox>
+   <Button Click="ResetClicked" ToolTip="{DynamicResource '重置降噪'}" AutomationProperties.Name="{DynamicResource '重置降噪'}" Padding="6,2"><local:EditorIcon Kind="Reset" Width="16" Height="16"/></Button>
+  </WrapPanel>
+  <!-- 精细调整展开时各行已经列出名称和数值，摘要只在收起时出现，免得同一组数值显示两遍 -->
+  <TextBlock x:Name="Summary" TextWrapping="Wrap" Foreground="{DynamicResource Muted}" Margin="0,0,0,4">
+   <TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers><DataTrigger Binding="{Binding IsExpanded, ElementName=Details}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></TextBlock.Style>
+  </TextBlock>
+  <Expander x:Name="Details" Header="{DynamicResource '精细调整'}" IsExpanded="True"><StackPanel x:Name="Parameters"/></Expander>
+ </StackPanel>
+</UserControl>

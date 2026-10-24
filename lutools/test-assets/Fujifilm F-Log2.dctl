@@ -1,0 +1,66 @@
+DEFINE_ACES_PARAM(IS_PARAMETRIC_ACES_TRANSFORM: 0)
+// <ACEStransformID>urn:ampas:aces:transformId:v1.5:IDT.Fujifilm.Fujifilm-FLog2.a1.v1</ACEStransformID>
+// <ACESuserName>ACES 1.0 Input - Fujifilm F-Log2 F-Gamut to ACES2065-1</ACESuserName>
+
+//
+// ACES Color Space Conversion - Fujifilm F-Log2 F-Gamut to ACES
+//
+// converts Fujifilm F-Log2 F-Gamut to
+//          ACES2065-1 (AP0 w/ Linear encoding)
+
+import "ACESlib.Utilities_Color";
+
+// F-Gamut to ACES AP0
+
+const float fgamut_AP0_mtx[3][3] = calculate_rgb_to_rgb_matrix( REC2020_PRI, AP0 );
+
+
+// Fujifilm F-Log2 coefficients:
+
+const float log_base = 10.0;
+const float cut2 = 0.100686685370811;
+const float f = 0.092864000000000;
+const float e = 8.799461000000000;
+const float d = 0.384316000000000;
+const float c = 0.245281000000000;
+const float a = 5.555556000000000;
+const float b = 0.064829000000000;
+
+
+float log_to_linear(input varying float in)
+{
+
+    if (in < cut2)
+    {
+        return (in - f) / e;
+    }
+    else
+    {
+        return pow(log_base, ((in - d) / c)) / a - b / a;
+    }
+}
+
+void main
+(   
+    input varying float rIn,
+    input varying float gIn,
+    input varying float bIn,
+    input varying float aIn,
+    output varying float rOut,
+    output varying float gOut,
+    output varying float bOut,
+    output varying float aOut
+)
+{
+    float lin_FGamut[3];
+    lin_VGamut[0] = log_to_linear( rIn);
+    lin_VGamut[1] = log_to_linear( gIn);
+    lin_VGamut[2] = log_to_linear( bIn);
+
+    float ACES[3] = mult_f3_f33( lin_FGamut, fgamut_AP0_mtx);
+  
+    rOut = ACES[0];
+    gOut = ACES[1];
+    bOut = ACES[2];
+    aOut = aIn;
+}
