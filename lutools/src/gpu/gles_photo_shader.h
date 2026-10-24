@@ -58,20 +58,48 @@ float decodeLog(float x) {
     return x < 0.100686685370811 ? (x - 0.092864) / 8.799461 :
         (pow(10.0, (x - 0.384316) / 0.245281) - 0.064829) / 5.555556;
 }
+// 四面体插值：格胞按主对角线切成 6 个四面体，只需 4 个角点、4 次采样
+// （三线性 8 次）。饱和区色相不随其他通道漂移；格点处输出与表值一致。
+vec3 tetra(vec3 c0, vec3 c1, vec3 c2, vec3 c3, float a, float b, float c) {
+    return (1.0 - a) * c0 + (a - b) * c1 + (b - c) * c2 + c * c3;
+}
 vec3 lookup(vec3 x) {
     vec3 p = clamp((x - domainMin) / (domainMax - domainMin), 0.0, 1.0) * float(lutSize - 1);
     ivec3 low = ivec3(floor(p));
     ivec3 high = min(low + 1, ivec3(lutSize - 1));
     vec3 t = p - vec3(low);
-    vec3 c00 = mix(texelFetch(film, low, 0).rgb,
-        texelFetch(film, ivec3(low.xy, high.z), 0).rgb, t.z);
-    vec3 c01 = mix(texelFetch(film, ivec3(low.x, high.y, low.z), 0).rgb,
-        texelFetch(film, ivec3(low.x, high.yz), 0).rgb, t.z);
-    vec3 c10 = mix(texelFetch(film, ivec3(high.x, low.yz), 0).rgb,
-        texelFetch(film, ivec3(high.x, low.y, high.z), 0).rgb, t.z);
-    vec3 c11 = mix(texelFetch(film, ivec3(high.xy, low.z), 0).rgb,
-        texelFetch(film, high, 0).rgb, t.z);
-    return mix(mix(c00, c01, t.y), mix(c10, c11, t.y), t.x);
+    if (t.x >= t.y) {
+        if (t.y >= t.z)      // x >= y >= z: 000 100 110 111
+            return tetra(texelFetch(film, low, 0).rgb,
+                texelFetch(film, ivec3(high.x, low.y, low.z), 0).rgb,
+                texelFetch(film, ivec3(high.x, high.y, low.z), 0).rgb,
+                texelFetch(film, high, 0).rgb, t.x, t.y, t.z);
+        else if (t.x >= t.z) // x >= z > y: 000 100 101 111
+            return tetra(texelFetch(film, low, 0).rgb,
+                texelFetch(film, ivec3(high.x, low.y, low.z), 0).rgb,
+                texelFetch(film, ivec3(high.x, low.y, high.z), 0).rgb,
+                texelFetch(film, high, 0).rgb, t.x, t.z, t.y);
+        // z > x >= y: 000 001 101 111
+        return tetra(texelFetch(film, low, 0).rgb,
+            texelFetch(film, ivec3(low.x, low.y, high.z), 0).rgb,
+            texelFetch(film, ivec3(high.x, low.y, high.z), 0).rgb,
+            texelFetch(film, high, 0).rgb, t.z, t.x, t.y);
+    }
+    if (t.x >= t.z)          // y > x >= z: 000 010 110 111
+        return tetra(texelFetch(film, low, 0).rgb,
+            texelFetch(film, ivec3(low.x, high.y, low.z), 0).rgb,
+            texelFetch(film, ivec3(high.x, high.y, low.z), 0).rgb,
+            texelFetch(film, high, 0).rgb, t.y, t.x, t.z);
+    if (t.y >= t.z)          // y >= z > x: 000 010 011 111
+        return tetra(texelFetch(film, low, 0).rgb,
+            texelFetch(film, ivec3(low.x, high.y, low.z), 0).rgb,
+            texelFetch(film, ivec3(low.x, high.y, high.z), 0).rgb,
+            texelFetch(film, high, 0).rgb, t.y, t.z, t.x);
+    // z > y > x: 000 001 011 111
+    return tetra(texelFetch(film, low, 0).rgb,
+        texelFetch(film, ivec3(low.x, low.y, high.z), 0).rgb,
+        texelFetch(film, ivec3(low.x, high.y, high.z), 0).rgb,
+        texelFetch(film, high, 0).rgb, t.z, t.y, t.x);
 }
 float toneCurve(float x) {
     float s = sign(curve) * pow(abs(curve), 1.2);

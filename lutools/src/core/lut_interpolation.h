@@ -27,34 +27,45 @@ static inline RGB interpolateLUT(const RGB* table, int lutSize, float r, float g
     float dg = fg - g0;
     float db = fb - b0;
 
-    /* 索引把 NaN 归零；权重仍使用原始值，保留 NaN 传播和负零。 */
+    /* 四面体插值：格胞按主对角线切成 6 个四面体，点落在哪个由 (dr,dg,db)
+       的大小次序决定，只需 4 个角点、4 次表访问（三线性要 8 次）。沿对角面
+       插值，饱和区色相不随其他通道漂移；格点处权重退化为单点，输出与表值
+       逐位一致。与 GPU 路径（GLES/D3D11/Metal）保持同一约定。
+       索引把 NaN 归零；权重仍使用原始值，保留 NaN 传播和负零。 */
     const int base = (b0 * lutSize + g0) * lutSize + r0;
-    const int red = r1 - r0;
-    const int green = (g1 - g0) * lutSize;
-    const int blue = (b1 - b0) * lutSize * lutSize;
-    RGB c000 = table[base];
-    RGB c001 = table[base + blue];
-    RGB c010 = table[base + green];
-    RGB c011 = table[base + green + blue];
-    RGB c100 = table[base + red];
-    RGB c101 = table[base + red + blue];
-    RGB c110 = table[base + red + green];
-    RGB c111 = table[base + red + green + blue];
-
-    // 沿 B 轴插值
-    auto lerpRGB = [](const RGB& a, const RGB& b, float t) {
-        return RGB(a.r + t * (b.r - a.r), a.g + t * (b.g - a.g), a.b + t * (b.b - a.b));
+    const int stepR = r1 - r0;
+    const int stepG = (g1 - g0) * lutSize;
+    const int stepB = (b1 - b0) * lutSize * lutSize;
+    const RGB c000 = table[base];
+    const RGB c111 = table[base + stepR + stepG + stepB];
+    auto tetra = [&c000, &c111](const RGB& c1, const RGB& c2, float a, float b, float c) {
+        return RGB(
+            (1.0f - a) * c000.r + (a - b) * c1.r + (b - c) * c2.r + c * c111.r,
+            (1.0f - a) * c000.g + (a - b) * c1.g + (b - c) * c2.g + c * c111.g,
+            (1.0f - a) * c000.b + (a - b) * c1.b + (b - c) * c2.b + c * c111.b);
     };
-    RGB c00 = lerpRGB(c000, c001, db);
-    RGB c01 = lerpRGB(c010, c011, db);
-    RGB c10 = lerpRGB(c100, c101, db);
-    RGB c11 = lerpRGB(c110, c111, db);
 
-    // 沿 G 轴插值
-    RGB c0 = lerpRGB(c00, c01, dg);
-    RGB c1 = lerpRGB(c10, c11, dg);
-
-    // 沿 R 轴插值
-    return lerpRGB(c0, c1, dr);
+    if (dr >= dg) {
+        if (dg >= db) {
+            // r >= g >= b: 000 100 110 111
+            return tetra(table[base + stepR], table[base + stepR + stepG], dr, dg, db);
+        }
+        if (dr >= db) {
+            // r >= b > g: 000 100 101 111
+            return tetra(table[base + stepR], table[base + stepR + stepB], dr, db, dg);
+        }
+        // b > r >= g: 000 001 101 111
+        return tetra(table[base + stepB], table[base + stepR + stepB], db, dr, dg);
+    }
+    if (dr >= db) {
+        // g > r >= b: 000 010 110 111
+        return tetra(table[base + stepG], table[base + stepR + stepG], dg, dr, db);
+    }
+    if (dg >= db) {
+        // g >= b > r: 000 010 011 111
+        return tetra(table[base + stepG], table[base + stepG + stepB], dg, db, dr);
+    }
+    // b > g > r: 000 001 011 111
+    return tetra(table[base + stepB], table[base + stepG + stepB], db, dg, dr);
 }
 } // namespace sony2fuji::detail

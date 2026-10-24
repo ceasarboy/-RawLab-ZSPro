@@ -253,6 +253,13 @@ inline float3 readLUT(
     return lut.read(uint3(r, g, b)).xyz;
 }
 
+inline float3 tetra(float3 c0, float3 c1, float3 c2, float3 c3, float a, float b, float c) {
+    return (1.0f - a) * c0 + (a - b) * c1 + (b - c) * c2 + c * c3;
+}
+
+// Tetrahedral interpolation: 4 corners along the cell's main diagonal instead of
+// the trilinear 8; avoids hue skew in saturated regions. Same convention as the
+// CPU, GLES and Direct3D 11 paths.
 inline float3 applyLUT(
     texture3d<float, access::read> lut,
     float3 value,
@@ -277,21 +284,34 @@ inline float3 applyLUT(
     float dg = coordinate.g - float(g0);
     float db = coordinate.b - float(b0);
 
-    float3 c000 = readLUT(lut, r0, g0, b0);
-    float3 c001 = readLUT(lut, r0, g0, b1);
-    float3 c010 = readLUT(lut, r0, g1, b0);
-    float3 c011 = readLUT(lut, r0, g1, b1);
-    float3 c100 = readLUT(lut, r1, g0, b0);
-    float3 c101 = readLUT(lut, r1, g0, b1);
-    float3 c110 = readLUT(lut, r1, g1, b0);
-    float3 c111 = readLUT(lut, r1, g1, b1);
-    float3 c00 = lerp3(c000, c001, db);
-    float3 c01 = lerp3(c010, c011, db);
-    float3 c10 = lerp3(c100, c101, db);
-    float3 c11 = lerp3(c110, c111, db);
-    float3 c0 = lerp3(c00, c01, dg);
-    float3 c1 = lerp3(c10, c11, dg);
-    return lerp3(c0, c1, dr);
+    if (dr >= dg) {
+        if (dg >= db) {
+            // r >= g >= b: 000 100 110 111
+            return tetra(readLUT(lut, r0, g0, b0), readLUT(lut, r1, g0, b0),
+                readLUT(lut, r1, g1, b0), readLUT(lut, r1, g1, b1), dr, dg, db);
+        }
+        if (dr >= db) {
+            // r >= b > g: 000 100 101 111
+            return tetra(readLUT(lut, r0, g0, b0), readLUT(lut, r1, g0, b0),
+                readLUT(lut, r1, g0, b1), readLUT(lut, r1, g1, b1), dr, db, dg);
+        }
+        // b > r >= g: 000 001 101 111
+        return tetra(readLUT(lut, r0, g0, b0), readLUT(lut, r0, g0, b1),
+            readLUT(lut, r1, g0, b1), readLUT(lut, r1, g1, b1), db, dr, dg);
+    }
+    if (dr >= db) {
+        // g > r >= b: 000 010 110 111
+        return tetra(readLUT(lut, r0, g0, b0), readLUT(lut, r0, g1, b0),
+            readLUT(lut, r1, g1, b0), readLUT(lut, r1, g1, b1), dg, dr, db);
+    }
+    if (dg >= db) {
+        // g >= b > r: 000 010 011 111
+        return tetra(readLUT(lut, r0, g0, b0), readLUT(lut, r0, g1, b0),
+            readLUT(lut, r0, g1, b1), readLUT(lut, r1, g1, b1), dg, db, dr);
+    }
+    // b > g > r: 000 001 011 111
+    return tetra(readLUT(lut, r0, g0, b0), readLUT(lut, r0, g0, b1),
+        readLUT(lut, r0, g1, b1), readLUT(lut, r1, g1, b1), db, dg, dr);
 }
 
 inline float signedPow(float value, float power) {

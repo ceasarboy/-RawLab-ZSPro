@@ -37,14 +37,21 @@ float decodeLog(float x) {
         : (pow(10.0,(x-0.384316)/0.245281)-0.064829)/5.555556;
 }
 float3 sampleLut(uint3 p) { return film[(p.z*control.w+p.y)*control.w+p.x]; }
+// tetrahedral: a>=b>=c sorted fractional coords; 4 corners along the cell main diagonal
+float3 tetra(float3 c0,float3 c1,float3 c2,float3 c3,float a,float b,float c) {
+    return (1-a)*c0+(a-b)*c1+(b-c)*c2+c*c3;
+}
 float3 lookup(float3 x) {
     float3 p=saturate((x-domainLow.xyz)/(domainHigh.xyz-domainLow.xyz))*(control.w-1);
     uint3 low=(uint3)floor(p),high=min(low+1,control.w-1); float3 t=p-low;
-    float3 c00=lerp(sampleLut(low),sampleLut(uint3(low.xy,high.z)),t.z);
-    float3 c01=lerp(sampleLut(uint3(low.x,high.y,low.z)),sampleLut(uint3(low.x,high.yz)),t.z);
-    float3 c10=lerp(sampleLut(uint3(high.x,low.yz)),sampleLut(uint3(high.x,low.y,high.z)),t.z);
-    float3 c11=lerp(sampleLut(uint3(high.xy,low.z)),sampleLut(high),t.z);
-    return lerp(lerp(c00,c01,t.y),lerp(c10,c11,t.y),t.x);
+    if(t.x>=t.y) {
+        if(t.y>=t.z) return tetra(sampleLut(low),sampleLut(uint3(high.x,low.y,low.z)),sampleLut(uint3(high.x,high.y,low.z)),sampleLut(high),t.x,t.y,t.z);
+        if(t.x>=t.z) return tetra(sampleLut(low),sampleLut(uint3(high.x,low.y,low.z)),sampleLut(uint3(high.x,low.y,high.z)),sampleLut(high),t.x,t.z,t.y);
+        return tetra(sampleLut(low),sampleLut(uint3(low.x,low.y,high.z)),sampleLut(uint3(high.x,low.y,high.z)),sampleLut(high),t.z,t.x,t.y);
+    }
+    if(t.x>=t.z) return tetra(sampleLut(low),sampleLut(uint3(low.x,high.y,low.z)),sampleLut(uint3(high.x,high.y,low.z)),sampleLut(high),t.y,t.x,t.z);
+    if(t.y>=t.z) return tetra(sampleLut(low),sampleLut(uint3(low.x,high.y,low.z)),sampleLut(uint3(low.x,high.y,high.z)),sampleLut(high),t.y,t.z,t.x);
+    return tetra(sampleLut(low),sampleLut(uint3(low.x,low.y,high.z)),sampleLut(uint3(low.x,high.y,high.z)),sampleLut(high),t.z,t.y,t.x);
 }
 float curve(float x) {
     float s=sign(detail.x)*pow(abs(detail.x),1.2);
