@@ -77,6 +77,7 @@ internal fun AdjustmentDock(state: EditorState, modifier: Modifier, tool: Int, s
     val filmItems = remember(state.looks, bundledFilms) { filmStripItems(state.looks, bundledFilms) }
     val calibrated = state.preview?.temperature?.isFinite() == true
     var menuLookId by remember { mutableStateOf<String?>(null) }
+    val waveletDenoiseAvailable = com.rawlab.android.BuildConfig.ZSPRO_WAVELET_DENOISE
     var bakeAId by remember { mutableStateOf<String?>(null) }
     var renameLookId by remember { mutableStateOf<String?>(null) }
     var deleteLookId by remember { mutableStateOf<String?>(null) }
@@ -259,7 +260,9 @@ internal fun AdjustmentDock(state: EditorState, modifier: Modifier, tool: Int, s
         Text(stringResource(R.string.all_tools), Modifier.padding(16.dp), style = MaterialTheme.typography.titleLarge)
         LazyVerticalGrid(columns = GridCells.Adaptive(96.dp), modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp),
             contentPadding = PaddingValues(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(editorToolOrder) { index -> EditorTool(state, index, index == tool) { allTools = false; selectTool(index) } }
+            items(editorToolOrder.filter { it != 11 || waveletDenoiseAvailable }) { index ->
+                EditorTool(state, index, index == tool) { allTools = false; selectTool(index) }
+            }
         }
     }
     if (reset) AlertDialog(onDismissRequest = { reset = false }, title = { Text(stringResource(R.string.reset_all_title)) },

@@ -125,6 +125,8 @@ android {
         versionName = "2.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
+        // ZSPro: wavelet denoise needs OpenCV cross-build; slim builds omit it.
+        buildConfigField("boolean", "ZSPRO_WAVELET_DENOISE", System.getenv("ZSPRO_DNGSDK")?.let { "true" } ?: "false")
         externalNativeBuild { cmake {
             arguments += listOf("-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON", "-DANDROID_STL=c++_shared")
             // ZSPro offline overrides: pre-extracted dependency sources.

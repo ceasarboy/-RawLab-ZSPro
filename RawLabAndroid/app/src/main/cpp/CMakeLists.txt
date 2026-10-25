@@ -44,7 +44,9 @@ endif()
 set(SONY2FUJI_LIBRAW_TARGET raw)
 # Vendored wavelib for the wavelet-denoise slim path (lutools expects the
 # parent dir of src/wavelib.c; the patch .inc files live next to it).
-set(WAVELIB_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+set(WAVELIB_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/wavelib-src")
+# Header-only cv::Mat subset for wavelet_tile.h (vendored opencv2 headers).
+set(SONY2FUJI_WAVELET_EXTRA_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/wavelib" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}")
 set(BUILD_CLI OFF CACHE BOOL "" FORCE)
 set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
@@ -59,9 +61,14 @@ set(SONY2FUJI_ENABLE_GPU ON CACHE BOOL "" FORCE)
 set(SONY2FUJI_ENABLE_LENSFUN OFF CACHE BOOL "" FORCE)
 set(SONY2FUJI_BUILD_LENS_DEPS OFF CACHE BOOL "" FORCE)
 set(SONY2FUJI_ENABLE_OPENMP OFF CACHE BOOL "" FORCE)
-set(SONY2FUJI_ENABLE_WAVELET_DENOISE ON CACHE BOOL "" FORCE)
+set(SONY2FUJI_ENABLE_WAVELET_DENOISE OFF CACHE BOOL "" FORCE)  # TODO(2.1): needs OpenCV cross-build
 set(SONY2FUJI_ENABLE_CHROMA_DENOISE OFF CACHE BOOL "" FORCE)
-set(SONY2FUJI_BUILD_DENOISE_DEPS OFF CACHE BOOL "" FORCE)add_subdirectory("${REPO}/lutools" "${CMAKE_CURRENT_BINARY_DIR}/core")
+set(SONY2FUJI_BUILD_DENOISE_DEPS OFF CACHE BOOL "" FORCE)
+# Vendored wavelib for the wavelet-denoise slim path (lutools expects the
+# parent dir of src/wavelib.c; the patch .inc files live next to it).
+set(WAVELIB_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/wavelib-src")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/wavelib" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}")
+add_subdirectory("${REPO}/lutools" "${CMAKE_CURRENT_BINARY_DIR}/core")
 # CPU denoise runs inside these dependencies, not only the optimized core wrapper.
 # ZSPro slim builds skip the OpenCV/wavelib dependencies; guard each target.
 foreach(denoise_target wavelib opencv_core opencv_imgproc)

@@ -145,9 +145,13 @@ if(SONY2FUJI_ENABLE_CHROMA_DENOISE OR SONY2FUJI_ENABLE_WAVELET_DENOISE)
                 set(WAVELIB_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/wavelib-src")
             endif()
         endif()
-        # OpenCV headers: vendored header-only subset in the Android cpp dir.
-        if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/../RawLabAndroid/app/src/main/cpp/opencv2/opencv2/core.hpp")
+        # OpenCV headers: vendored header-only subset. The repo carries it in
+        # the Android cpp dir; when built standalone (host harness) use the
+        # tools copy via ZSPRO_OPENCV_INCLUDE.
+        if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/../RawLabAndroid/app/src/main/cpp/opencv2/core.hpp")
             include_directories(BEFORE SYSTEM "${CMAKE_CURRENT_LIST_DIR}/../RawLabAndroid/app/src/main/cpp")
+        elseif(DEFINED ENV{ZSPRO_OPENCV_INCLUDE})
+            include_directories(BEFORE SYSTEM "$ENV{ZSPRO_OPENCV_INCLUDE}")
         endif()
         if(NOT WAVELIB_SOURCE_DIR)
             message(FATAL_ERROR "Wavelet denoise needs wavelib: set ZSPRO_WAVELIB_SOURCE to an extracted wavelib source tree")
