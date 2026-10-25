@@ -46,8 +46,8 @@ internal object RasterImageDecoder {
                 throw IOException("Image is not an 8-bit RGB image")
             if (Build.VERSION.SDK_INT >= 26 && bitmap.colorSpace?.isSrgb != true)
                 throw IOException("Image color space is not supported")
-            if (Build.VERSION.SDK_INT >= 34 && bitmap.hasGainmap())
-                throw IOException("HDR gain maps are not supported")
+            // ZSPro: a decoded gain map is ignored - copyPixelsToBuffer reads
+            // the SDR primary image, which is exactly what we edit.
             if (info.mayContainAlpha && !isOpaque(bitmap)) throw IOException("Transparent PNG is not supported")
             val oriented = orient(bitmap, file)
             try {

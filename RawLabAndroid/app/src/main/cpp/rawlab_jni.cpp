@@ -492,11 +492,15 @@ Java_com_rawlab_android_engine_NativeProcessor_nativeProcess(JNIEnv* env, jobjec
                 reinterpret_cast<const jbyte*>(b.data) + y * b.stride_bytes);
         }
         if (env->ExceptionCheck()) return nullptr;
-        float kelvin = NAN, wbTint = NAN;
+        float kelvin = 6500, wbTint = 0;
         if (!displayInput) {
+            // RAW: report the file's as-shot WB. Display input has no camera
+            // WB - zeros (never NaN: Kotlin clamps and requires finiteness).
             sony2fuji_session_get_raw_white_balance(session, &kelvin, &wbTint);
             kelvin = std::round(kelvin); wbTint = std::round(wbTint);
         }
+        if (!std::isfinite(kelvin)) kelvin = 6500;
+        if (!std::isfinite(wbTint)) wbTint = 0;
         auto type = env->FindClass("com/rawlab/android/engine/NativeFrame");
         if (!type) return nullptr;
         auto constructor = env->GetMethodID(type, "<init>", "(II[BFFI)V");

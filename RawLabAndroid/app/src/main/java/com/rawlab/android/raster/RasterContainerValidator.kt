@@ -110,7 +110,8 @@ internal object RasterContainerValidator {
                     type.contentEquals("mDCV".toByteArray()) ||
                     type.contentEquals("cLLi".toByteArray()) -> return invalid("HDR PNG color metadata is not supported")
             }
-            if (data != null && containsGainMapMarker(data)) return invalid("HDR gain maps are not supported")
+            // ZSPro: gain-map metadata is informational - the SDR primary
+            // image decodes normally, so don't reject the file over it.
             if (type.contentEquals("IEND".toByteArray())) {
                 if (length != 0) return invalid("Invalid PNG end marker")
                 sawIend = true
@@ -132,7 +133,9 @@ internal object RasterContainerValidator {
         var sawScan = false
         while (marker != null) {
             if (marker == 0xD9) {
-                if (!sawScan || stream.read() >= 0) return invalid("Invalid JPEG frame")
+                // ZSPro: trailing bytes after EOI (camera watermark configs,
+                // maker padding) are tolerated - BitmapFactory ignores them.
+                if (!sawScan) return invalid("Invalid JPEG frame")
                 if (iccTotal != null && !IccProfiles.validateJpegChunks(iccChunks, iccTotal))
                     return invalid("Invalid JPEG ICC profile")
                 return frame?.copy(hasColorProfile = iccTotal != null)?.let(::RasterValidation)
@@ -160,7 +163,7 @@ internal object RasterContainerValidator {
             val body = if (isFrame || marker in 0xE0..0xEF) ByteArray(bodyLength) else null
             if (body != null && !readFully(stream, body, 0, bodyLength)) return invalid("Truncated JPEG")
             else if (body == null && !skipFully(stream, bodyLength)) return invalid("Truncated JPEG")
-            if (body != null && containsGainMapMarker(body)) return invalid("HDR gain maps are not supported")
+            // ZSPro: gain-map markers are tolerated (see above).
             // ZSPro: MPF (multi-picture) segments are skipped - camera JPEGs
             // keep auxiliary frames there while the primary image stays normal.
             if (marker == 0xE2 && body != null && IccProfiles.isJpegPrefix(body)) {
