@@ -133,9 +133,11 @@ if(SONY2FUJI_ENABLE_CHROMA_DENOISE OR SONY2FUJI_ENABLE_WAVELET_DENOISE)
             HINTS "${LIBRAW_LIBRARY_DIRS}/cmake/opencv4")
         set(SONY2FUJI_DENOISE_LIBRARIES ${OpenCV_LIBS} PkgConfig::WAVELIB)
         include_directories(SYSTEM ${OpenCV_INCLUDE_DIRS})
-    elseif(DEFINED OPENCV_PREBUILT_DIR AND EXISTS "${OPENCV_PREBUILT_DIR}/libopencv_core.a")
-        # ZSPro slim path with prebuilt OpenCV (official android-sdk zip):
-        # wavelib from a local source tree, OpenCV linked as prebuilt statics.
+    elseif(DEFINED OpenCV_DIR AND EXISTS "${OpenCV_DIR}/OpenCVConfig.cmake")
+        # ZSPro slim path with the official OpenCV Android SDK: let the SDK
+        # package config link core/imgproc together with the per-ABI 3rdparty
+        # statics they need (tegra_hal on arm64; ippiw/ippicv/ipphal on x86_64;
+        # tbb, ittnotify, z).
         if(NOT WAVELIB_SOURCE_DIR)
             if(DEFINED ENV{ZSPRO_WAVELIB_SOURCE})
                 file(TO_CMAKE_PATH "$ENV{ZSPRO_WAVELIB_SOURCE}" WAVELIB_SOURCE_DIR)
@@ -146,27 +148,10 @@ if(SONY2FUJI_ENABLE_CHROMA_DENOISE OR SONY2FUJI_ENABLE_WAVELET_DENOISE)
             endif()
         endif()
         add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/wavelib" "${CMAKE_CURRENT_BINARY_DIR}/wavelib")
-        set(OPENCV_PREBUILT_3RDPARTY_DIR "${OPENCV_ANDROID_SDK}/sdk/native/3rdparty/libs/${ANDROID_ABI}")
-        add_library(opencv_core STATIC IMPORTED)
-        add_library(opencv_imgproc STATIC IMPORTED)
-        set_target_properties(opencv_core PROPERTIES IMPORTED_LOCATION "${OPENCV_PREBUILT_DIR}/libopencv_core.a")
-        set_target_properties(opencv_imgproc PROPERTIES IMPORTED_LOCATION "${OPENCV_PREBUILT_DIR}/libopencv_imgproc.a")
-        # OpenCV arm64 statics reference the Carotene HAL (tegra_hal).
-        set(SONY2FUJI_DENOISE_LIBRARIES opencv_imgproc opencv_core wavelib)
-        # wavelet_denoise.cpp uses cv::transform/checkRange: the SDK jni
-        # headers lack imgproc internals, add the source-tree headers.
-        if(EXISTS "${OPENCV_ANDROID_SDK}/../modules/imgproc/include/opencv2/imgproc.hpp")
-            include_directories(BEFORE SYSTEM "${OPENCV_ANDROID_SDK}/../modules/imgproc/include"
-                "${OPENCV_ANDROID_SDK}/../modules/core/include")
-        endif()
-        # arm64 statics reference the Carotene HAL and kleidicv/tbb; add the
-        # ones that exist for this ABI (x86_64 3rdparty lacks tegra_hal).
-        foreach(extra libtegra_hal.a libkleidicv.a libkleidicv_hal.a libkleidicv_thread.a libittnotify.a libtbb.a libippiw.a libippicv.a)
-            if(EXISTS "${OPENCV_PREBUILT_3RDPARTY_DIR}/${extra}")
-                list(APPEND SONY2FUJI_DENOISE_LIBRARIES "${OPENCV_PREBUILT_3RDPARTY_DIR}/${extra}")
-            endif()
-        endforeach()
-        include_directories(SYSTEM "${OPENCV_PREBUILT_INCLUDE}")
+        find_package(OpenCV 4.12 CONFIG REQUIRED COMPONENTS core imgproc
+            PATHS "${OpenCV_DIR}" NO_DEFAULT_PATH)
+        include_directories(SYSTEM ${OpenCV_INCLUDE_DIRS})
+        set(SONY2FUJI_DENOISE_LIBRARIES ${OpenCV_LIBS} wavelib)
     else()
         # ZSPro slim path: wavelet denoising only needs wavelib (a small C
         # library). Build it from a local source tree when the network
@@ -394,7 +379,8 @@ if(ANDROID AND SONY2FUJI_ENABLE_WAVELET_DENOISE)
     target_compile_options(wavelet_denoise_tests PRIVATE -UNDEBUG)
 endif()
 
-if(ANDROID AND SONY2FUJI_ENABLE_GPU AND SONY2FUJI_ENABLE_CHROMA_DENOISE AND SONY2FUJI_ENABLE_WAVELET_DENOISE)
+# 安卓侧色度降噪默认关闭，GPU 一致性测试以“小波降噪 + GPU”为准，可选色度部分由源文件自行裁剪。
+if(ANDROID AND SONY2FUJI_ENABLE_GPU AND SONY2FUJI_ENABLE_WAVELET_DENOISE)
     add_executable(gpu_filter_tests EXCLUDE_FROM_ALL tests/metal_denoise_tests.cpp)
     target_link_libraries(gpu_filter_tests sony2fuji_core ${SONY2FUJI_DENOISE_LIBRARIES})
     target_compile_options(gpu_filter_tests PRIVATE -UNDEBUG)

@@ -52,60 +52,35 @@ set(BUILD_CLI OFF CACHE BOOL "" FORCE)
 set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIB OFF CACHE BOOL "" FORCE)
 set(SONY2FUJI_ENABLE_GPU ON CACHE BOOL "" FORCE)
-# ZSPro slim build: lensfun/OpenCV/wavelib come from github.com and are
-# omitted by default; set ZSPRO_FULL_DEPS=1 to enable with network access.
-# ZSPro slim build: lensfun and chroma-denoise (OpenCV full build) stay
-# off - they pull github.com-hosted dependency trees. Wavelet denoise is
-# ON: wavelib C sources are vendored in cpp/wavelib-src and only need
-# header-only cv::Mat shims vendored in cpp/opencv2 (see wavelet_tile.h).
+# ZSPro slim build: lensfun and chroma-denoise (full OpenCV ximgproc build)
+# stay off - they pull github.com-hosted dependency trees. Wavelet denoise is
+# ON: it needs only OpenCV core+imgproc and the vendored wavelib C sources in
+# cpp/wavelib-src.
 set(SONY2FUJI_ENABLE_LENSFUN OFF CACHE BOOL "" FORCE)
 set(SONY2FUJI_BUILD_LENS_DEPS OFF CACHE BOOL "" FORCE)
 set(SONY2FUJI_ENABLE_OPENMP OFF CACHE BOOL "" FORCE)
 set(SONY2FUJI_ENABLE_WAVELET_DENOISE ON CACHE BOOL "" FORCE)
-# OpenCV for wavelet denoise: prebuilt arm64/x86_64 static libs from the
-# official android-sdk zip (tools/opencv-android/OpenCV-android-sdk).
+set(SONY2FUJI_ENABLE_CHROMA_DENOISE OFF CACHE BOOL "" FORCE)
+set(SONY2FUJI_BUILD_DENOISE_DEPS OFF CACHE BOOL "" FORCE)
+# OpenCV for wavelet denoise: use the official Android SDK package config
+# (sdk/native/jni/OpenCVConfig.cmake). It links core/imgproc together with the
+# per-ABI 3rdparty statics they need (tegra_hal on arm64; ippiw/ippicv/ipphal
+# on x86_64; tbb, ittnotify, z). Hand-listing those always misses one.
 if(NOT OPENCV_ANDROID_SDK)
     if(DEFINED ENV{OPENCV_ANDROID_SDK})
         set(OPENCV_ANDROID_SDK "$ENV{OPENCV_ANDROID_SDK}")
     else()
-        set(OPENCV_ANDROID_SDK "F:/rawlab/tools/opencv-android/OpenCV-android-sdk")
+        set(OPENCV_ANDROID_SDK "${REPO}/../tools/opencv-android/OpenCV-android-sdk")
     endif()
 endif()
-set(SONY2FUJI_ENABLE_CHROMA_DENOISE OFF CACHE BOOL "" FORCE)
-set(SONY2FUJI_BUILD_DENOISE_DEPS OFF CACHE BOOL "" FORCE)
-# Vendored wavelib for the wavelet-denoise slim path (lutools expects the
-# parent dir of src/wavelib.c; the patch .inc files live next to it).
-set(WAVELIB_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/wavelib-src")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/wavelib" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}")
-set(OPENCV_PREBUILT_DIR "${OPENCV_ANDROID_SDK}/sdk/native/staticlibs/${ANDROID_ABI}")
-set(OPENCV_PREBUILT_INCLUDE "${OPENCV_ANDROID_SDK}/sdk/native/jni/include")
-if(NOT DEFINED OPENCV_SRC_ROOT)
-    if(DEFINED ENV{OPENCV_SRC_ROOT})
-        set(OPENCV_SRC_ROOT "$ENV{OPENCV_SRC_ROOT}")
-    else()
-        # Extracted opencv-4.12.0 source zip (modules/hal trees).
-        set(OPENCV_SRC_ROOT "${OPENCV_ANDROID_SDK}/../../../opencv-4120-src/opencv-4.12.0")
-    endif()
-endif()
-# OpenCV 4.12 statics call ipp_hal_* / carotene HAL entry points; build the
-# two HAL shims from the source tree (the same thing denoise-deps does).
-file(GLOB IPPHAL_SOURCES "${OPENCV_SRC_ROOT}/hal/ipp/src/*.cpp")
-add_library(ipphal STATIC ${IPPHAL_SOURCES})
-target_include_directories(ipphal PRIVATE
-    "${OPENCV_SRC_ROOT}/hal/ipp/include"
-    "${OPENCV_SRC_ROOT}/modules/core/include"
-    "${OPENCV_SRC_ROOT}/3rdparty/ippicv/ippicv_lnx/a64/include")
-file(GLOB CAROTENE_SOURCES "${OPENCV_SRC_ROOT}/hal/carotene/hal/src/*.cpp")
-add_library(carotene_hal STATIC ${CAROTENE_SOURCES})
-target_include_directories(carotene_hal PRIVATE
-    "${OPENCV_SRC_ROOT}/hal/carotene/hal"
-    "${OPENCV_SRC_ROOT}/hal/carotene/include"
-    "${OPENCV_SRC_ROOT}/modules/core/include")
-set(OPENCV_SOURCE_INCLUDE "${OPENCV_ANDROID_SDK}/../..")  # source zip root, for imgproc internal headers
+# The package selects its ABI directory from ANDROID_NDK_ABI_NAME, which
+# modern NDKs no longer define; pin it to the Gradle ABI instead.
+set(OpenCV_CONFIG_SUBDIR "/abi-${ANDROID_ABI}")
+set(OpenCV_DIR "${OPENCV_ANDROID_SDK}/sdk/native/jni")
 add_subdirectory("${REPO}/lutools" "${CMAKE_CURRENT_BINARY_DIR}/core")
 # CPU denoise runs inside these dependencies, not only the optimized core wrapper.
-# ZSPro slim builds skip the OpenCV/wavelib dependencies; guard each target.
-foreach(denoise_target wavelib opencv_core opencv_imgproc)
+# Prebuilt OpenCV statics are imported release builds; only wavelib is ours.
+foreach(denoise_target wavelib)
     if(TARGET ${denoise_target})
         target_compile_options(${denoise_target} PRIVATE $<$<CONFIG:Debug>:-O3>)
     endif()
