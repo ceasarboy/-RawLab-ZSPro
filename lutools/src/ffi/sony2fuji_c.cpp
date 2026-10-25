@@ -1865,8 +1865,7 @@ sony2fuji_status sony2fuji_bake_look_lut(
                         std::max(0.f, std::min(1.f, m.g + (x.g - m.g) * strength_b)),
                         std::max(0.f, std::min(1.f, m.b + (x.b - m.b) * strength_b)));
                 }
-                out << m.r << ' ' << m.g << ' ' << m.b << '
-';
+                out << m.r << ' ' << m.g << ' ' << m.b << '\n';
         }
     return out.good() ? SONY2FUJI_STATUS_OK : SONY2FUJI_STATUS_IO_ERROR;
 }
