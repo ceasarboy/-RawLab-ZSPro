@@ -46,7 +46,8 @@ class LookLibraryInstrumentedTest {
         val second = File(context.cacheDir, "second-${UUID.randomUUID()}.cube").apply { writeText(syntheticCube()) }
         try {
             val library = LookLibrary(root)
-            assertThrows(UnsupportedOperationException::class.java) { library.importLook(invalid) }
+            // 校验器的 UnsupportedOperationException 会统一包装为带拒绝原因的 InvalidLookException。
+            assertThrows(InvalidLookException::class.java) { library.importLook(invalid) }
             assertTrue(library.list().isEmpty())
             assertTrue(root.listFiles().orEmpty().all { it.name == ".lock" })
             val a = library.importLook(first, "same.cube")

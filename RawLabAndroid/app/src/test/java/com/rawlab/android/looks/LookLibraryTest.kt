@@ -338,4 +338,24 @@ class LookLibraryTest {
             source.delete()
         }
     }
+
+    @Test
+    fun adaptStdBaseRegistersTheAdaptedLookUnderTheHeldStorageLock() {
+        val root = Files.createTempDirectory("rawlab-look-adapt").toFile()
+        try {
+            val map = File(root, "std.cube").apply { writeText("valid") }
+            // 回归：adaptStdBase 已持有存储锁，内部再次加锁会抛 OverlappingFileLockException。
+            val library = LookLibrary(root, validator, stdAdapter = { _, _, output ->
+                output.writeText("valid")
+            })
+            val source = library.importLook("valid".byteInputStream(), "panasonic.cube")
+
+            val adapted = library.adaptStdBase(source.id, map)
+
+            assertEquals("panasonic.cube [STD]", adapted.name)
+            assertEquals(setOf(source.id, adapted.id), library.list().map { it.id }.toSet())
+        } finally {
+            root.deleteRecursively()
+        }
+    }
 }

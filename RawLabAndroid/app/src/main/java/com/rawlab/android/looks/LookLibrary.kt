@@ -41,6 +41,9 @@ class LookLibrary(
     private val root: File,
     private val validator: LookValidator = NativeLookValidator,
     private val dcpCompiler: DcpCompiler = NativeDcpCompiler,
+    private val stdAdapter: (File, File, File) -> Unit = { source, map, output ->
+        NativeProcessor.adaptStdLook(source, map, output)
+    },
 ) {
     private val registry = File(root, REGISTRY_NAME)
     private val monitor = monitors.computeIfAbsent(root.canonicalPath) { Any() }
@@ -63,13 +66,18 @@ class LookLibrary(
     fun importLook(source: File, originalName: String = source.name): ManagedLook =
         source.inputStream().use { importLook(it, originalName) }
 
-    fun importLook(input: InputStream, originalName: String): ManagedLook = locked {
+    fun importLook(input: InputStream, originalName: String): ManagedLook =
+        locked { importLocked(input, originalName) }
+
+    // 文件锁不可重入：已持有存储锁的调用方（adaptStdBase/bakeStack）必须走这里，
+    // 否则嵌套 locked{} 会对同一 .lock 再次加锁并抛 OverlappingFileLockException。
+    private fun importLocked(input: InputStream, originalName: String): ManagedLook {
         val id = UUID.randomUUID().toString()
         val transaction = File(root, ".import-$id.pending")
         check(transaction.createNewFile()) { "Cannot record look import" }
         val namedFormat = LookFormat.fromExtension(originalName.substringAfterLast('.', ""))
         val rawStage = File(root, ".${id}.stage")
-        try {
+        return try {
             val dcp = originalName.substringAfterLast('.').equals("dcp", ignoreCase = true)
             val format = if (dcp) {
                 val compiled = dcpCompiler.compile(readBoundedDcp(input), sourceName(originalName))
@@ -110,8 +118,8 @@ class LookLibrary(
         val source = look.file(root)
         val staged = File(root, ".adapt-${look.id}-${System.currentTimeMillis()}.cube")
         try {
-            NativeProcessor.adaptStdLook(source, map, staged)
-            val imported = importLook(staged, "${look.name} [STD]")
+            stdAdapter(source, map, staged)
+            val imported = staged.inputStream().use { importLocked(it, "${look.name} [STD]") }
             imported
         } finally {
             staged.delete()
@@ -130,7 +138,7 @@ class LookLibrary(
         try {
             NativeProcessor.bakeLookStack(
                 lookA.file(root).path, strengthA, fileB, strengthB, staged)
-            importLook(staged, name.ifBlank { "${lookA.name} baked" })
+            staged.inputStream().use { importLocked(it, name.ifBlank { "${lookA.name} baked" }) }
         } finally {
             staged.delete()
         }
