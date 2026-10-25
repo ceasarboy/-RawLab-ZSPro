@@ -155,7 +155,7 @@ internal fun AdjustmentDock(state: EditorState, modifier: Modifier, tool: Int, s
                                                 menuLookId = null; onAdaptStdLook(look.id)
                                             })
                                         DropdownMenuItem(text = { Text(stringResource(R.string.zspro_bake_stack)) },
-                                            leadingIcon = { Icon(Icons.Outlined.LayerIcon, null) }, onClick = {
+                                            leadingIcon = { Icon(Icons.Outlined.Layers, null) }, onClick = {
                                                 menuLookId = null; bakeAId = look.id
                                             })
                                         DropdownMenuItem(text = { Text(stringResource(R.string.delete_look)) },

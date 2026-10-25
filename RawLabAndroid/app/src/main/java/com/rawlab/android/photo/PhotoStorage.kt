@@ -52,6 +52,7 @@ class PhotoStorage(
 ) : AutoCloseable {
     private val resolver = context.contentResolver
     private val directory = File(context.cacheDir, "rawlab-${UUID.randomUUID()}")
+    private val lookRoot = looksDirectory
     private val lookLibrary = LookLibrary(looksDirectory, lookValidator, dcpCompiler)
     private val films = Film.all + BundledLooks.load(context)
     private var lensDirectory: File? = null
@@ -142,9 +143,9 @@ class PhotoStorage(
     // ZSPro: the official STD->V-Log mapping ships as an asset; extract it
     // once into look storage so the native adapter can read it from disk.
     private fun stdMapFile(): File {
-        val map = File(looksDirectory, "STD_to_VLOG_2nd.cube")
+        val map = File(lookRoot, "STD_to_VLOG_2nd.cube")
         if (!map.isFile) {
-            val staged = File(looksDirectory, "STD_to_VLOG_2nd.cube.tmp")
+            val staged = File(lookRoot, "STD_to_VLOG_2nd.cube.tmp")
             context.assets.open("std/STD_to_VLOG_2nd.cube").use { input ->
                 staged.outputStream().use { input.copyTo(it) }
             }

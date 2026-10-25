@@ -6,7 +6,9 @@ include(FetchContent)
 # ZSPro offline build: RAWLAB_LIBRAW_SOURCE points at an extracted LibRaw
 # 0.22.2 tree to skip the download (unset = download from libraw.org).
 if(DEFINED ENV{RAWLAB_LIBRAW_SOURCE})
-    set(FETCHCONTENT_SOURCE_DIR_LIBRAW "$ENV{RAWLAB_LIBRAW_SOURCE}")
+    # Normalise Windows backslashes: CMake string parsing rejects '\L'.
+    string(REPLACE "\\" "/" _zspro_libraw "$ENV{RAWLAB_LIBRAW_SOURCE}")
+    set(FETCHCONTENT_SOURCE_DIR_LIBRAW "${_zspro_libraw}")
 endif()
 FetchContent_Declare(libraw
     # CMake 3.22 preserves archive timestamps; isolate ABI versions from old objects.
@@ -54,8 +56,11 @@ set(SONY2FUJI_ENABLE_CHROMA_DENOISE OFF CACHE BOOL "" FORCE)
 set(SONY2FUJI_BUILD_DENOISE_DEPS OFF CACHE BOOL "" FORCE)
 add_subdirectory("${REPO}/lutools" "${CMAKE_CURRENT_BINARY_DIR}/core")
 # CPU denoise runs inside these dependencies, not only the optimized core wrapper.
+# ZSPro slim builds skip the OpenCV/wavelib dependencies; guard each target.
 foreach(denoise_target wavelib opencv_core opencv_imgproc)
-    target_compile_options(${denoise_target} PRIVATE $<$<CONFIG:Debug>:-O3>)
+    if(TARGET ${denoise_target})
+        target_compile_options(${denoise_target} PRIVATE $<$<CONFIG:Debug>:-O3>)
+    endif()
 endforeach()
 add_library(rawlab-jni SHARED rawlab_jni.cpp)
 target_include_directories(rawlab-jni PRIVATE "${REPO}/lutools/include")

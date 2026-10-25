@@ -2,6 +2,7 @@
 
 #include "sony2fuji/sony2fuji.h"
 #include "sony2fuji/dcp_look.h"
+#include "sony2fuji/lut_adapt.h"
 #include "core/photo_rendering.h"
 #include "core/chroma_denoise.h"
 #include "core/wavelet_denoise.h"
@@ -1774,6 +1775,100 @@ sony2fuji_status sony2fuji_analyze_image(
         return SONY2FUJI_STATUS_OK;
     } catch (const std::bad_alloc&) { return SONY2FUJI_STATUS_OUT_OF_MEMORY; }
       catch (const std::exception&) { return SONY2FUJI_STATUS_PROCESSING_ERROR; }
+}
+
+namespace {
+sony2fuji_status writeCubeFile(const char* path, const char* title, int size,
+    const std::vector<sony2fuji::RGB>& data) {
+    std::ofstream out(std::filesystem::u8path(path));
+    if (!out) return SONY2FUJI_STATUS_IO_ERROR;
+    out << "TITLE \"" << title << "\"\n"
+        << "#Gamma:srgb to srgb\n"
+        << "#Gamut:ITU-R BT.709 to ITU-R BT.709\n"
+        << "LUT_3D_SIZE " << size << "\n\n";
+    for (const auto& m : data)
+        out << m.r << ' ' << m.g << ' ' << m.b << '\n';
+    return out.good() ? SONY2FUJI_STATUS_OK : SONY2FUJI_STATUS_IO_ERROR;
+}
+bool hasLogInput(const sony2fuji::LUT3D& lut) {
+    using T = sony2fuji::LUTTransfer;
+    const auto t = lut.inputTransfer();
+    return t == T::FLog || t == T::FLog2 || t == T::FLog2C;
+}
+}
+
+// Re-grids a Panasonic "STD photo style" look through the official STD->V-Log
+// mapping so it reads correctly on RawLab's neutral display baseline.
+sony2fuji_status sony2fuji_adapt_std_lut(
+    const char* in_path, const char* map_path, const char* out_path, int size
+) {
+    if (!in_path || isEmptyString(in_path) || !map_path || isEmptyString(map_path) ||
+        !out_path || isEmptyString(out_path) || size < 17 || size > 65)
+        return SONY2FUJI_STATUS_INVALID_ARGUMENT;
+    const auto lut = sony2fuji::LUTParser::loadLUTCached(in_path);
+    const auto map = sony2fuji::LUTParser::loadLUTCached(map_path);
+    if (!lut || !map) return SONY2FUJI_STATUS_UNSUPPORTED;
+    const auto adapted = sony2fuji::adaptStdLut(*lut, *map, size);
+    if (!adapted) return SONY2FUJI_STATUS_PROCESSING_ERROR;
+    std::vector<sony2fuji::RGB> data;
+    data.reserve(static_cast<size_t>(size) * size * size);
+    for (int b = 0; b < size; ++b)
+        for (int g = 0; g < size; ++g)
+            for (int r = 0; r < size; ++r)
+                data.push_back(adapted->getValue(r, g, b));
+    return writeCubeFile(out_path, "Panasonic STD base adapted (RawLab ZSPro)", size, data);
+}
+
+// Bakes a two-look stack (A + B with independent strengths) into one
+// display-encoding look LUT for reuse in the library.
+sony2fuji_status sony2fuji_bake_look_lut(
+    const char* path_a, float strength_a,
+    const char* path_b, float strength_b,
+    const char* out_path, int size
+) {
+    if (!path_a || isEmptyString(path_a) || !out_path || isEmptyString(out_path) ||
+        !std::isfinite(strength_a) || strength_a < 0 || strength_a > 1 ||
+        !std::isfinite(strength_b) || strength_b < 0 || strength_b > 1 ||
+        size < 17 || size > 65)
+        return SONY2FUJI_STATUS_INVALID_ARGUMENT;
+    const auto lutA = sony2fuji::LUTParser::loadLUTCached(path_a);
+    if (!lutA || hasLogInput(*lutA)) return SONY2FUJI_STATUS_UNSUPPORTED;
+    std::shared_ptr<sony2fuji::LUT3D> lutB;
+    if (path_b && !isEmptyString(path_b) && strength_b > 0) {
+        lutB = sony2fuji::LUTParser::loadLUTCached(path_b);
+        if (!lutB || hasLogInput(*lutB)) return SONY2FUJI_STATUS_UNSUPPORTED;
+    }
+    std::ofstream out(std::filesystem::u8path(out_path));
+    if (!out) return SONY2FUJI_STATUS_IO_ERROR;
+    out << "TITLE \"Baked look stack\"\n"
+        << "# Baked by RawLab ZSPro: display-encoding look stack.\n"
+        << "#Gamma:srgb to srgb\n"
+        << "#Gamut:ITU-R BT.709 to ITU-R BT.709\n"
+        << "LUT_3D_SIZE " << size << "\n\n";
+    const sony2fuji::LUTApplicator appA(lutA);
+    const bool useB = static_cast<bool>(lutB);
+    const sony2fuji::LUTApplicator appB(useB ? lutB : lutA);
+    for (int b = 0; b < size; ++b)
+        for (int g = 0; g < size; ++g)
+            for (int r = 0; r < size; ++r) {
+                const float fr = size > 1 ? float(r) / (size - 1) : 0.f;
+                const float fg = size > 1 ? float(g) / (size - 1) : 0.f;
+                const float fb = size > 1 ? float(b) / (size - 1) : 0.f;
+                const sony2fuji::RGB v(fr, fg, fb);
+                const sony2fuji::RGB a = appA.apply(v);
+                sony2fuji::RGB m(std::max(0.f, std::min(1.f, v.r + (a.r - v.r) * strength_a)),
+                    std::max(0.f, std::min(1.f, v.g + (a.g - v.g) * strength_a)),
+                    std::max(0.f, std::min(1.f, v.b + (a.b - v.b) * strength_a)));
+                if (useB) {
+                    const sony2fuji::RGB x = appB.apply(m);
+                    m = sony2fuji::RGB(std::max(0.f, std::min(1.f, m.r + (x.r - m.r) * strength_b)),
+                        std::max(0.f, std::min(1.f, m.g + (x.g - m.g) * strength_b)),
+                        std::max(0.f, std::min(1.f, m.b + (x.b - m.b) * strength_b)));
+                }
+                out << m.r << ' ' << m.g << ' ' << m.b << '
+';
+        }
+    return out.good() ? SONY2FUJI_STATUS_OK : SONY2FUJI_STATUS_IO_ERROR;
 }
 
 void sony2fuji_release_buffer(sony2fuji_buffer* buffer) {

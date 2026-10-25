@@ -58,11 +58,8 @@ fun AboutDialog(
                 }
                 if (showLicenses) {
                     val notices = remember { runCatching {
-                        context.assets.list("licenses").orEmpty().sorted().joinToString("
-
-") { name ->
-                            name + "
-" + context.assets.open("licenses/$name").bufferedReader().use { it.readText() }
+                        context.assets.list("licenses").orEmpty().sorted().joinToString("\n\n") { name ->
+                            name + "\n" + context.assets.open("licenses/$name").bufferedReader().use { it.readText() }
                         }
                     }.getOrDefault("") }
                     Text(notices, Modifier.heightIn(max = 220.dp).verticalScroll(rememberScrollState()),

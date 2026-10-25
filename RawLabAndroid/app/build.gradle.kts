@@ -129,10 +129,12 @@ android {
             arguments += listOf("-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON", "-DANDROID_STL=c++_shared")
             // ZSPro offline overrides: pre-extracted dependency sources.
             System.getenv("RAWLAB_LIBRAW_SOURCE")?.let {
-                arguments += listOf("-DFETCHCONTENT_SOURCE_DIR_LIBRAW=${File(it).absolutePath}")
+                arguments += listOf("-DFETCHCONTENT_SOURCE_DIR_LIBRAW=" +
+                    File(it).absolutePath.replace('\\', '/'))
             }
             System.getenv("RAWLAB_LIBTIFF_SOURCE")?.let {
-                arguments += listOf("-DFETCHCONTENT_SOURCE_DIR_RAWLAB_LIBTIFF=${File(it).absolutePath}")
+                arguments += listOf("-DFETCHCONTENT_SOURCE_DIR_RAWLAB_LIBTIFF=" +
+                    File(it).absolutePath.replace('\\', '/'))
             }
         } }
         usageProfile(preferences = "usage_analytics", environment = "PROD", defaultEnabled = true)
