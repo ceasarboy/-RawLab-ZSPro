@@ -463,8 +463,11 @@ class EditorViewModel @JvmOverloads constructor(
         }
     }
     private fun text(id: Int) = AppStrings.text(id)
-    private fun failure(error: Throwable): String = if (error is OutOfMemoryError) text(R.string.memory_error)
+    private fun failure(error: Throwable): String {
+        android.util.Log.e("RawLabError", "photo operation failed", error)
+        return if (error is OutOfMemoryError) text(R.string.memory_error)
         else text(R.string.process_error) + "\n" + (error.message ?: error.javaClass.simpleName)
+    }
 
     override fun onCleared() {
         disposed = true

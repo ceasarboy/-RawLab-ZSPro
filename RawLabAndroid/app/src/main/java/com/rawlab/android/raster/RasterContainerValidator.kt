@@ -161,8 +161,8 @@ internal object RasterContainerValidator {
             if (body != null && !readFully(stream, body, 0, bodyLength)) return invalid("Truncated JPEG")
             else if (body == null && !skipFully(stream, bodyLength)) return invalid("Truncated JPEG")
             if (body != null && containsGainMapMarker(body)) return invalid("HDR gain maps are not supported")
-            if (marker == 0xE2 && body != null && body.size >= 4 && body.copyOfRange(0, 4).contentEquals("MPF\u0000".toByteArray()))
-                return invalid("Multi-picture JPEG is not supported")
+            // ZSPro: MPF (multi-picture) segments are skipped - camera JPEGs
+            // keep auxiliary frames there while the primary image stays normal.
             if (marker == 0xE2 && body != null && IccProfiles.isJpegPrefix(body)) {
                 if (body.size < 14 || body[11] != 0.toByte()) return invalid("Invalid JPEG ICC profile")
                 val sequence = body[12].toInt() and 0xFF
