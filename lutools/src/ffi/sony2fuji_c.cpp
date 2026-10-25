@@ -1401,7 +1401,7 @@ static sony2fuji_status processImpl(
     // shaders; they flip this to route through the CPU pipeline.
     bool cpuOnlyStages = false;
 #else
-    const bool cpuOnlyStages = hslActive || effectsActive || waveletActive || session->chroma_denoise != 0;
+    bool cpuOnlyStages = hslActive || effectsActive || waveletActive || session->chroma_denoise != 0;
 #endif
     const bool fastWavelet = !geometryActive && waveletActive && !effectsActive && session->chroma_denoise == 0 && session->interactive_preview &&
         local.intent == SONY2FUJI_INTENT_PREVIEW && local.output_target == SONY2FUJI_TARGET_BUFFER;
