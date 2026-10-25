@@ -264,6 +264,38 @@ Java_com_rawlab_android_engine_NativeLookBridge_validate(JNIEnv* env, jclass, js
     return nullptr;
 }
 
+extern "C" JNIEXPORT void JNICALL
+Java_com_rawlab_android_engine_NativeLookBridge_adaptStd(JNIEnv* env, jclass,
+    jstring inPath, jstring mapPath, jstring outPath) {
+    try {
+        UtfChars in(env, inPath), map(env, mapPath), out(env, outPath);
+        const auto status = sony2fuji_adapt_std_lut(in.chars, map.chars, out.chars, 65);
+        if (status != SONY2FUJI_STATUS_OK) throwJava(env, "java/io/IOException",
+            sony2fuji_status_message(status));
+    } catch (const std::bad_alloc&) {
+        throwJava(env, "java/lang/OutOfMemoryError", "Not enough memory to adapt look");
+    } catch (const std::exception& error) {
+        throwJava(env, "java/io/IOException", error.what());
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_rawlab_android_engine_NativeLookBridge_bakeStack(JNIEnv* env, jclass,
+    jstring pathA, jfloat strengthA, jstring pathB, jfloat strengthB, jstring outPath) {
+    try {
+        UtfChars a(env, pathA), out(env, outPath);
+        UtfChars b(env, pathB);  // Kotlin 保证非空（可传 "" 表示无叠加）
+        const auto status = sony2fuji_bake_look_lut(a.chars, strengthA,
+            b.chars && b.chars[0] ? b.chars : nullptr, strengthB, out.chars, 65);
+        if (status != SONY2FUJI_STATUS_OK) throwJava(env, "java/io/IOException",
+            sony2fuji_status_message(status));
+    } catch (const std::bad_alloc&) {
+        throwJava(env, "java/lang/OutOfMemoryError", "Not enough memory to bake look stack");
+    } catch (const std::exception& error) {
+        throwJava(env, "java/io/IOException", error.what());
+    }
+}
+
 extern "C" JNIEXPORT jbyteArray JNICALL
 Java_com_rawlab_android_engine_NativeDcpBridge_compile(JNIEnv* env, jclass, jbyteArray source, jbyteArray sourceNameUtf8) {
     DcpBlob blob;

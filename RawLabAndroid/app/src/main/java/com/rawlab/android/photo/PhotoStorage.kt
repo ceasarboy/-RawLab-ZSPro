@@ -139,6 +139,29 @@ class PhotoStorage(
 
     fun renameLook(id: String, name: String): ManagedLook = lookLibrary.rename(id, name)
 
+    // ZSPro: the official STD->V-Log mapping ships as an asset; extract it
+    // once into look storage so the native adapter can read it from disk.
+    private fun stdMapFile(): File {
+        val map = File(looksDirectory, "STD_to_VLOG_2nd.cube")
+        if (!map.isFile) {
+            val staged = File(looksDirectory, "STD_to_VLOG_2nd.cube.tmp")
+            context.assets.open("std/STD_to_VLOG_2nd.cube").use { input ->
+                staged.outputStream().use { input.copyTo(it) }
+            }
+            if (!staged.renameTo(map)) {
+                staged.delete()
+                throw IOException("STD map extract failed")
+            }
+        }
+        return map
+    }
+
+    fun adaptStdLook(id: String): ManagedLook = lookLibrary.adaptStdBase(id, stdMapFile())
+
+    fun bakeLookStack(
+        idA: String, strengthA: Float, idB: String?, strengthB: Float, name: String,
+    ): ManagedLook = lookLibrary.bakeStack(idA, strengthA, idB, strengthB, name)
+
     fun deleteLook(id: String) = lookLibrary.remove(id)
 
     fun filmPath(id: String): File? {

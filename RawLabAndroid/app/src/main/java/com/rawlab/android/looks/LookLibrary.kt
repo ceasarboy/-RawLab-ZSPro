@@ -103,6 +103,39 @@ class LookLibrary(
         }
     }
 
+    // ZSPro: adapt a managed Panasonic STD-based look through the official
+    // STD->V-Log mapping; registers the adapted cube as a new managed look.
+    fun adaptStdBase(id: String, map: File): ManagedLook = locked {
+        val look = requireLook(id)
+        val source = look.file(root)
+        val staged = File(root, ".adapt-${look.id}-${System.currentTimeMillis()}.cube")
+        try {
+            NativeProcessor.adaptStdLook(source, map, staged)
+            val imported = importLook(staged, "${look.name} [STD]")
+            imported
+        } finally {
+            staged.delete()
+        }
+    }
+
+    // ZSPro: bake a two-look stack into a new managed look.
+    fun bakeStack(
+        idA: String, strengthA: Float,
+        idB: String?, strengthB: Float,
+        name: String,
+    ): ManagedLook = locked {
+        val lookA = requireLook(idA)
+        val fileB = idB?.let { requireLook(it).file(root).path }
+        val staged = File(root, ".bake-${lookA.id}-${System.currentTimeMillis()}.cube")
+        try {
+            NativeProcessor.bakeLookStack(
+                lookA.file(root).path, strengthA, fileB, strengthB, staged)
+            importLook(staged, name.ifBlank { "${lookA.name} baked" })
+        } finally {
+            staged.delete()
+        }
+    }
+
     fun rename(id: String, name: String): ManagedLook = locked {
         val existing = requireLook(id)
         val trimmed = name.trim()

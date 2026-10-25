@@ -260,6 +260,7 @@ int main() {
 
     sony2fuji_session* session=nullptr;
     sony2fuji_session_create(&session);
+#ifndef SONY2FUJI_DNG_EXPORT_DISABLED
     const unsigned char dngPixels[3] = {128, 70, 220};
     auto dngRequest = request(dngPixels);
     const std::string dngPath = (dir / "rendered.dng").string();
@@ -291,6 +292,7 @@ int main() {
     dngRequest.input_path = dngPath.c_str();
     check(sony2fuji_process(session, &dngRequest, nullptr) == SONY2FUJI_STATUS_INVALID_ARGUMENT,
           "DNG output cannot overwrite the original input");
+#endif // SONY2FUJI_DNG_EXPORT_DISABLED
     {
         const auto unsupported = cube.u8string();
         const auto missing = (dir / "missing.dng").u8string();

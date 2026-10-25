@@ -56,6 +56,11 @@ internal sealed interface LookWork {
     data class Import(val uris: List<Uri>) : LookWork
     data class Rename(val id: String, val name: String) : LookWork
     data class Delete(val id: String) : LookWork
+    data class AdaptStd(val id: String) : LookWork
+    data class BakeStack(
+        val idA: String, val strengthA: Float,
+        val idB: String?, val strengthB: Float, val name: String,
+    ) : LookWork
 }
 internal data class LookImportFailure(val message: String, val invalid: Boolean,
     val dcpReason: DcpFailureReason? = null)
@@ -65,6 +70,8 @@ internal sealed interface LookResult {
     data class Imported(val imported: List<ManagedLook>, val failures: List<LookImportFailure>, val looks: List<LookChoice>) : LookResult
     data class Renamed(val look: ManagedLook, val looks: List<LookChoice>) : LookResult
     data class Deleted(val id: String, val looks: List<LookChoice>) : LookResult
+    data class Adapted(val look: ManagedLook, val looks: List<LookChoice>) : LookResult
+    data class Baked(val look: ManagedLook, val looks: List<LookChoice>) : LookResult
     data class Failed(val error: Throwable, val reload: Boolean) : LookResult
 }
 
@@ -95,6 +102,14 @@ internal fun runLookWork(storage: PhotoStorage, work: LookWork): LookResult = sy
         is LookWork.Delete -> {
             storage.deleteLook(work.id)
             LookResult.Deleted(work.id, storage.looks())
+        }
+        is LookWork.AdaptStd -> {
+            val look = storage.adaptStdLook(work.id)
+            LookResult.Adapted(look, storage.looks())
+        }
+        is LookWork.BakeStack -> {
+            val look = storage.bakeLookStack(work.idA, work.strengthA, work.idB, work.strengthB, work.name)
+            LookResult.Baked(look, storage.looks())
         }
     }
 } catch (error: Throwable) {

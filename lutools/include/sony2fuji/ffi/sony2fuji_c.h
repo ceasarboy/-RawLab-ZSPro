@@ -486,6 +486,20 @@ sony2fuji_status sony2fuji_compute_histogram(
     float* out_bins
 );
 
+// ZSPro: adapt a Panasonic "STD photo style" look LUT through the official
+// STD->V-Log mapping so it reads correctly on the neutral display baseline.
+sony2fuji_status sony2fuji_adapt_std_lut(
+    const char* in_path, const char* map_path, const char* out_path, int size
+);
+
+// ZSPro: bake a two-look stack (independent strengths) into one
+// display-encoding look LUT.
+sony2fuji_status sony2fuji_bake_look_lut(
+    const char* path_a, float strength_a,
+    const char* path_b, float strength_b,
+    const char* out_path, int size
+);
+
 void sony2fuji_release_buffer(sony2fuji_buffer* buffer);
 
 const char* sony2fuji_status_message(sony2fuji_status status);

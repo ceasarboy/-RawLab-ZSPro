@@ -137,12 +137,37 @@ CameraWhiteBalance::CameraWhiteBalance(const libraw_data_t& raw) {
             secondTemperature_=illuminantTemperature(raw.color.dng_color[1].illuminant);
         }
     }
+    bool fellBack = false;
+    if (!validMatrix(first_)) {
+        // LibRaw's adobe_coeff table has no entry for some recent cameras,
+        // leaving cam_xyz all zeros. Fall back to the sRGB matrix so the
+        // temperature slider stays usable — colorimetrically approximate
+        // rather than camera-specific.
+        static constexpr double srgb[3][3] = {
+            {0.4124, 0.3576, 0.1805},
+            {0.2126, 0.7152, 0.0722},
+            {0.0193, 0.1192, 0.9505},
+        };
+        for (int r=0;r<3;++r) for (int c=0;c<3;++c) first_[r][c]=srgb[r][c];
+        fellBack = true;
+    }
     if (!validMatrix(first_)) return;
     std::array<double,3> neutral{};
     for (int c=0;c<3;++c) {
         const double gain=raw.color.cam_mul[c];
         if (!std::isfinite(gain) || gain<=0) return;
         neutral[c]=1/gain;
+    }
+    if (fellBack) {
+        // With an approximate matrix the file's as-shot multipliers are often
+        // not a physically realizable white point (e.g. some bodies ship
+        // chromaticities on the spectral locus), so any estimate from them is
+        // garbage. Anchor the slider at 6500 neutral instead: camera-WB
+        // rendering is untouched (it bypasses multipliers), and the
+        // temperature slider keeps a sane zero reference.
+        asShot_ = {6500, 0};
+        valid_ = true;
+        return;
     }
     for (int iteration=0;iteration<30;++iteration) {
         Matrix cameraToXYZ{};

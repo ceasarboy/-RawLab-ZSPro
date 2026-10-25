@@ -318,4 +318,10 @@
     <string name="wb_unavailable">"Für diese Eingabe ist keine Kamera-Weißabgleichkalibrierung verfügbar"</string>
     <string name="white_balance">"Weißabgleich"</string>
     <string name="zoom_fit">"An Fenster anpassen"</string>
+    <string name="zspro_adapt_std">"Panasonic-STD-Basis anpassen"</string>
+    <string name="zspro_bake_stack">"Look-Stack backen"</string>
+    <string name="zspro_stack_a">"Haupt-Look: %1$s"</string>
+    <string name="zspro_stack_b">"Überlagerungs-Look: %1$s"</string>
+    <string name="zspro_stack_none">"Keine"</string>
+    <string name="zspro_licenses">"Open-Source-Lizenzen"</string>
 </resources>

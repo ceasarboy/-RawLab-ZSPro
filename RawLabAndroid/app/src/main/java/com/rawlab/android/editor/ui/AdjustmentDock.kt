@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.rawlab.android.R
 import com.rawlab.android.analytics.UsageFilmKind
 import com.rawlab.android.editor.EditorState
+import com.rawlab.android.settings.LookChoice
 import com.rawlab.android.editor.Operation
 import com.rawlab.android.editor.controls.DenoiseControls
 import com.rawlab.android.editor.controls.HslControls
@@ -66,7 +67,8 @@ internal fun AdjustmentDock(state: EditorState, modifier: Modifier, tool: Int, s
     onImportLook: () -> Unit, onRenameLook: (String, String) -> Unit, onDeleteLook: (String) -> Unit,
     onAutoExposure: () -> Unit, onDraftEdit: (EditSettings, Boolean) -> Unit,
     onApplyDraft: () -> Unit, onDiscardDraft: () -> Unit,
-    onFilmSelected: (UsageFilmKind) -> Unit, onGeometryRatio: (GeometryRatio, Boolean) -> Unit) {
+    onFilmSelected: (UsageFilmKind) -> Unit, onGeometryRatio: (GeometryRatio, Boolean) -> Unit,
+    onAdaptStdLook: (String) -> Unit = {}, onBakeLookStack: (String, Float, String?, Float, String) -> Unit = { _, _, _, _, _ -> }) {
     val edits = state.visibleEdits
     val context = LocalContext.current
     val rawInput = state.photo?.inputKind == PhotoInputKind.RAW
@@ -75,6 +77,7 @@ internal fun AdjustmentDock(state: EditorState, modifier: Modifier, tool: Int, s
     val filmItems = remember(state.looks, bundledFilms) { filmStripItems(state.looks, bundledFilms) }
     val calibrated = state.preview?.temperature?.isFinite() == true
     var menuLookId by remember { mutableStateOf<String?>(null) }
+    var bakeAId by remember { mutableStateOf<String?>(null) }
     var renameLookId by remember { mutableStateOf<String?>(null) }
     var deleteLookId by remember { mutableStateOf<String?>(null) }
     var renameText by remember { mutableStateOf("") }
@@ -146,6 +149,14 @@ internal fun AdjustmentDock(state: EditorState, modifier: Modifier, tool: Int, s
                                         DropdownMenuItem(text = { Text(stringResource(R.string.rename_look)) },
                                             leadingIcon = { Icon(Icons.Outlined.Edit, null) }, onClick = {
                                                 menuLookId = null; renameLookId = look.id; renameText = look.name
+                                            })
+                                        DropdownMenuItem(text = { Text(stringResource(R.string.zspro_adapt_std)) },
+                                            leadingIcon = { Icon(Icons.Outlined.Tune, null) }, onClick = {
+                                                menuLookId = null; onAdaptStdLook(look.id)
+                                            })
+                                        DropdownMenuItem(text = { Text(stringResource(R.string.zspro_bake_stack)) },
+                                            leadingIcon = { Icon(Icons.Outlined.LayerIcon, null) }, onClick = {
+                                                menuLookId = null; bakeAId = look.id
                                             })
                                         DropdownMenuItem(text = { Text(stringResource(R.string.delete_look)) },
                                             leadingIcon = { Icon(Icons.Outlined.Delete, null) }, onClick = {
@@ -270,6 +281,57 @@ internal fun AdjustmentDock(state: EditorState, modifier: Modifier, tool: Int, s
             confirmButton = { TextButton(onClick = { onDeleteLook(id); deleteLookId = null }) { Text(stringResource(R.string.confirm)) } },
             dismissButton = { TextButton(onClick = { deleteLookId = null }) { Text(stringResource(R.string.cancel)) } })
     }
+    bakeAId?.let { idA ->
+        LookStackBakeDialog(
+            looks = state.looks.filter { it.managed && it.available },
+            initialA = idA,
+            onDismiss = { bakeAId = null },
+            onBake = { a, sa, b, sb, name ->
+                bakeAId = null
+                onBakeLookStack(a, sa, b, sb, name)
+            },
+        )
+    }
+}
+
+@Composable
+private fun LookStackBakeDialog(
+    looks: List<LookChoice>,
+    initialA: String,
+    onDismiss: () -> Unit,
+    onBake: (String, Float, String?, Float, String) -> Unit,
+) {
+    var idA by remember { mutableStateOf(initialA) }
+    var idB by remember { mutableStateOf<String?>(looks.firstOrNull { it.id != initialA }?.id) }
+    var strengthA by remember { mutableStateOf(1f) }
+    var strengthB by remember { mutableStateOf(0.6f) }
+    var name by remember { mutableStateOf("") }
+    val nameA = looks.firstOrNull { it.id == idA }?.name.orEmpty()
+    val nameB = idB?.let { id -> looks.firstOrNull { it.id == id }?.name }
+    AlertDialog(onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.zspro_bake_stack)) },
+        text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(R.string.zspro_stack_a, nameA), style = MaterialTheme.typography.bodySmall)
+            Slider(value = strengthA, onValueChange = { strengthA = it }, valueRange = 0f..1f)
+            Text(stringResource(R.string.zspro_stack_b, nameB ?: stringResource(R.string.zspro_stack_none)),
+                style = MaterialTheme.typography.bodySmall)
+            Slider(value = strengthB, onValueChange = { strengthB = it }, valueRange = 0f..1f,
+                enabled = idB != null)
+            looks.filter { it.id != idA }.forEach { candidate ->
+                Row(Modifier.fillMaxWidth().selectable(selected = idB == candidate.id, role = Role.RadioButton,
+                    onClick = { idB = if (idB == candidate.id) null else candidate.id }),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(selected = idB == candidate.id, onClick = { idB = if (idB == candidate.id) null else candidate.id })
+                    Text(candidate.name, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            OutlinedTextField(value = name, onValueChange = { name = it }, singleLine = true,
+                label = { Text(stringResource(R.string.look_name)) })
+        } },
+        confirmButton = { TextButton(onClick = {
+            onBake(idA, strengthA, idB, strengthB, name.trim().ifBlank { "$nameA +" + (nameB ?: "") })
+        }, enabled = strengthA > 0f) { Text(stringResource(R.string.confirm)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } })
 }
 
 @Composable

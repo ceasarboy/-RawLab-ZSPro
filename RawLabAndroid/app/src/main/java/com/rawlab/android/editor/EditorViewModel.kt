@@ -165,6 +165,16 @@ class EditorViewModel @JvmOverloads constructor(
                 val mutation = EditorStateReducer.lookRenamed(mutable.value, result.look)
                 mutable.value = mutation.state.copy(looks = result.looks)
             }
+            is LookResult.Adapted -> {
+                val mutation = EditorStateReducer.lookImported(mutable.value, result.look)
+                mutable.value = mutation.state.copy(looks = result.looks)
+                scheduleLookPreview(mutation.preview)
+            }
+            is LookResult.Baked -> {
+                val mutation = EditorStateReducer.lookImported(mutable.value, result.look)
+                mutable.value = mutation.state.copy(looks = result.looks)
+                scheduleLookPreview(mutation.preview)
+            }
             is LookResult.Deleted -> {
                 val mutation = EditorStateReducer.lookDeleted(mutable.value, result.id)
                 mutable.value = mutation.state.copy(looks = result.looks)
@@ -244,6 +254,22 @@ class EditorViewModel @JvmOverloads constructor(
         if (mutable.value.operation != Operation.NONE || mutable.value.draft != null) return
         mutable.value = mutable.value.copy(operation = Operation.IMPORT_LOOK, error = null)
         lookRevision = lookQueue.submit(LookWork.Delete(id))
+    }
+
+    // ZSPro: adapt a Panasonic STD-based look to the neutral baseline.
+    fun adaptStdLook(id: String) {
+        if (mutable.value.operation != Operation.NONE || mutable.value.draft != null) return
+        mutable.value = mutable.value.copy(operation = Operation.IMPORT_LOOK, error = null)
+        lookRevision = lookQueue.submit(LookWork.AdaptStd(id))
+    }
+
+    // ZSPro: bake a two-look stack into one managed look.
+    fun bakeLookStack(
+        idA: String, strengthA: Float, idB: String?, strengthB: Float, name: String,
+    ) {
+        if (mutable.value.operation != Operation.NONE || mutable.value.draft != null) return
+        mutable.value = mutable.value.copy(operation = Operation.IMPORT_LOOK, error = null)
+        lookRevision = lookQueue.submit(LookWork.BakeStack(idA, strengthA, idB, strengthB, name))
     }
 
     fun edit(edits: EditSettings, interactive: Boolean = false) {

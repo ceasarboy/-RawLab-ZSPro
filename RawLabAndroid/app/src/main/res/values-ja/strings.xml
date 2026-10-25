@@ -318,4 +318,10 @@
     <string name="wb_unavailable">"この入力にはカメラのホワイトバランス補正がありません"</string>
     <string name="white_balance">"ホワイトバランス"</string>
     <string name="zoom_fit">"ウィンドウに合わせる"</string>
+    <string name="zspro_adapt_std">"Panasonic STDベースを適応"</string>
+    <string name="zspro_bake_stack">"ルックを組み合わせる"</string>
+    <string name="zspro_stack_a">"メインルック: %1$s"</string>
+    <string name="zspro_stack_b">"重ねるルック: %1$s"</string>
+    <string name="zspro_stack_none">"なし"</string>
+    <string name="zspro_licenses">"オープンソースライセンス"</string>
 </resources>

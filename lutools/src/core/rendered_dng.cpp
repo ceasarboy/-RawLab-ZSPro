@@ -1,5 +1,15 @@
 #include "rendered_dng.h"
 
+
+#ifdef SONY2FUJI_DNG_EXPORT_DISABLED
+#include <string>
+// Slim build: TIFF unavailable — the float32 DNG writer is compiled out.
+namespace sony2fuji {
+ErrorCode saveRenderedDNG(const ImageData&, const std::string&) {
+    return ErrorCode::InvalidFormat;
+}
+} // namespace sony2fuji
+#else
 #include <tiffio.h>
 
 #include <algorithm>
@@ -418,3 +428,4 @@ ErrorCode saveRenderedDNG(const ImageData& image, const std::string& filepath) {
 }
 
 } // namespace sony2fuji
+#endif // SONY2FUJI_DNG_EXPORT_DISABLED

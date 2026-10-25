@@ -52,7 +52,8 @@ inline void encodePhotoLUTInput(ImageData& image, LUTTransfer transfer) {
 }
 
 inline void renderPhotoLUTOutput(ImageData& image, LUTTransfer transfer) {
-    if (transfer == LUTTransfer::Display) return;
+    // ZSPro: an undeclared contract is treated as a display look on both ends.
+    if (transfer == LUTTransfer::Display || transfer == LUTTransfer::Unknown) return;
     // 合同已要求输出 BT.709/D65；Log 解码后可直接使用线性 sRGB 显示转换。
     const size_t count = image.pixels.size();
 #ifdef _OPENMP

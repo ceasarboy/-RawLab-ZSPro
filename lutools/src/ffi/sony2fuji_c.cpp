@@ -1027,7 +1027,9 @@ sony2fuji_status sony2fuji_validate_look(
             std::shared_ptr<sony2fuji::LUT3D> lut;
             const auto status = loadLUT(path, &lut);
             if (status != SONY2FUJI_STATUS_OK) return status;
-            if (!lut->isPhotoLUT()) return SONY2FUJI_STATUS_UNSUPPORTED;
+            // ZSPro: contract-less CUBE files are accepted as display looks
+            // (community LUT packs rarely carry #Gamma/#Gamut comments); a
+            // declared log contract is still honoured by the render path.
             if (format) *format = SONY2FUJI_LOOK_CUBE;
         } else {
             return SONY2FUJI_STATUS_UNSUPPORTED;
@@ -1394,7 +1396,9 @@ static sony2fuji_status processImpl(
     const bool viewportPreview = session->viewport_preview && local.intent == SONY2FUJI_INTENT_PREVIEW &&
         local.output_target == SONY2FUJI_TARGET_BUFFER;
 #if defined(SONY2FUJI_ENABLE_METAL) || defined(SONY2FUJI_ENABLE_GLES) || defined(SONY2FUJI_ENABLE_D3D11)
-    const bool cpuOnlyStages = false;
+    // ZSPro: display-input looks cannot run in the log-input GPU photo
+    // shaders; they flip this to route through the CPU pipeline.
+    bool cpuOnlyStages = false;
 #else
     const bool cpuOnlyStages = hslActive || effectsActive || waveletActive || session->chroma_denoise != 0;
 #endif
@@ -1415,7 +1419,14 @@ static sony2fuji_status processImpl(
         } else {
             status = loadLUT(local.lut_path, &lut);
             if (status != SONY2FUJI_STATUS_OK) return status;
-            if (!lut->isPhotoLUT()) return SONY2FUJI_STATUS_UNSUPPORTED;
+            // ZSPro: display-input looks (explicit sRGB contract or undeclared)
+            // cannot be represented by the log-input GPU photo shaders; run
+            // them on the CPU pipeline (Auto falls back, Force reports).
+            if (lut->inputTransfer() == sony2fuji::LUTTransfer::SRGB ||
+                lut->inputTransfer() == sony2fuji::LUTTransfer::Unknown) {
+                cpuOnlyStages = true;
+            }
+            // ZSPro: an undeclared transfer contract means a display look.
         }
     }
 #if defined(SONY2FUJI_ENABLE_METAL)
@@ -1627,7 +1638,9 @@ static sony2fuji_status processImpl(
 #endif
             for (size_t i = 0; i < count; ++i) image.pixels[i] = dcp->apply(image.pixels[i]);
         } else {
-            if (lut->inputTransfer() == sony2fuji::LUTTransfer::SRGB) {
+            if (lut->inputTransfer() == sony2fuji::LUTTransfer::SRGB ||
+                lut->inputTransfer() == sony2fuji::LUTTransfer::Unknown) {
+                // ZSPro: contract-less display look consumes the display image.
                 image = base;
             } else if (lut->inputTransfer() != sony2fuji::LUTTransfer::FLog2) {
                 sony2fuji::encodePhotoLUTInput(image, lut->inputTransfer());
@@ -1636,7 +1649,7 @@ static sony2fuji_status processImpl(
                 applyFLog2Encoding(image, false);
             }
             auto config = session->gpu_config;
-            if (gpuPipeline || hslActive || session->chroma_denoise != 0 || waveletActive || effectsActive) config.mode = sony2fuji::GpuMode::Off;
+            if (cpuOnlyStages || gpuPipeline || hslActive || session->chroma_denoise != 0 || waveletActive || effectsActive) config.mode = sony2fuji::GpuMode::Off;
             auto result = sony2fuji::applyLUTWithConfig(lut, image, config);
             if (result != sony2fuji::ErrorCode::Success) return mapError(result);
             sony2fuji::renderPhotoLUTOutput(image, lut->outputTransfer());

@@ -318,4 +318,10 @@
     <string name="wb_unavailable">"Aucune calibration de balance des blancs de l\'appareil n\'est disponible pour cette entrée"</string>
     <string name="white_balance">"Balance des blancs"</string>
     <string name="zoom_fit">"Ajuster à la fenêtre"</string>
+    <string name="zspro_adapt_std">"Adapter la base STD Panasonic"</string>
+    <string name="zspro_bake_stack">"Combiner les looks"</string>
+    <string name="zspro_stack_a">"Look principal : %1$s"</string>
+    <string name="zspro_stack_b">"Look superposé : %1$s"</string>
+    <string name="zspro_stack_none">"Aucun"</string>
+    <string name="zspro_licenses">"Licences open source"</string>
 </resources>

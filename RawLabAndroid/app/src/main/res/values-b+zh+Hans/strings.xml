@@ -9,7 +9,7 @@
     <string name="album_square">"方形缩略图"</string>
     <string name="album_view_options">"视图选项"</string>
     <string name="all_albums">"全部相册"</string>
-    <string name="app_name">"RawLab"</string>
+    <string name="app_name">"RawLab ZSPro"</string>
     <string name="app_version">"版本 %1$s"</string>
     <string name="as_shot">"拍摄时设置"</string>
     <string name="author_xiaohongshu">"作者的小红书主页"</string>
@@ -318,4 +318,10 @@
     <string name="wb_unavailable">"此输入没有可用的相机白平衡校准"</string>
     <string name="white_balance">"白平衡"</string>
     <string name="zoom_fit">"适合窗口"</string>
+    <string name="zspro_adapt_std">"适配松下 STD 底座"</string>
+    <string name="zspro_bake_stack">"组合烘焙 LUT"</string>
+    <string name="zspro_stack_a">"主 LUT：%1$s"</string>
+    <string name="zspro_stack_b">"叠加 LUT：%1$s"</string>
+    <string name="zspro_stack_none">"无"</string>
+    <string name="zspro_licenses">"开源许可"</string>
 </resources>

@@ -28,12 +28,21 @@ endif()
 option(SONY2FUJI_BUILD_TIFF_DEPS
     "Build the pinned libtiff dependency instead of using pkg-config"
     ${SONY2FUJI_BUILD_TIFF_DEPS_DEFAULT})
-if(SONY2FUJI_BUILD_TIFF_DEPS)
+set(SONY2FUJI_ENABLE_DNG_EXPORT ON CACHE BOOL "Enable the rendered-DNG (float32 DNG) writer")
+if(NOT SONY2FUJI_ENABLE_DNG_EXPORT)
+    set(SONY2FUJI_TIFF_TARGET "")
+elseif(SONY2FUJI_BUILD_TIFF_DEPS)
     enable_language(C)
     include(cmake/tiff-dependencies.cmake)
 else()
-    pkg_check_modules(TIFF REQUIRED IMPORTED_TARGET "libtiff-4>=4.7.1")
-    set(SONY2FUJI_TIFF_TARGET PkgConfig::TIFF)
+    pkg_check_modules(TIFF QUIET IMPORTED_TARGET "libtiff-4>=4.7.0")
+    if(TIFF_FOUND)
+        set(SONY2FUJI_TIFF_TARGET PkgConfig::TIFF)
+    else()
+        set(SONY2FUJI_ENABLE_DNG_EXPORT OFF CACHE BOOL "" FORCE)
+        set(SONY2FUJI_TIFF_TARGET "")
+        message(STATUS "libtiff not found - rendered-DNG export disabled")
+    endif()
 endif()
 
 # OpenMP (optional)
@@ -146,6 +155,7 @@ include_directories(
 set(CORE_SOURCES
     src/core/lut_parser.cpp
     src/core/lut_applicator.cpp
+    src/core/lut_adapt.cpp
     src/core/dcp_look.cpp
     src/core/dcp_compiler.cpp
     src/core/color_converter.cpp
@@ -167,7 +177,13 @@ set(CORE_SOURCES
     src/gpu/compute_denoise.cpp
 )
 if(WIN32)
-    list(APPEND CORE_SOURCES src/platform/display_image_windows.cpp)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        # MinGW lacks the WIC APIs the MSVC implementation uses; the generic
+        # stub (display image loading unsupported) keeps the core buildable.
+        list(APPEND CORE_SOURCES src/platform/display_image.cpp)
+    else()
+        list(APPEND CORE_SOURCES src/platform/display_image_windows.cpp)
+    endif()
 else()
     list(APPEND CORE_SOURCES src/platform/display_image.cpp)
 endif()
@@ -205,7 +221,11 @@ endif()
 if(SONY2FUJI_ENABLE_LENSFUN)
     target_link_libraries(sony2fuji_core ${LENSFUN_LIBRARY})
 endif()
-target_link_libraries(sony2fuji_core ${SONY2FUJI_TIFF_TARGET})
+if(SONY2FUJI_ENABLE_DNG_EXPORT)
+    target_link_libraries(sony2fuji_core ${SONY2FUJI_TIFF_TARGET})
+else()
+    target_compile_definitions(sony2fuji_core PUBLIC SONY2FUJI_DNG_EXPORT_DISABLED)
+endif()
 if(SONY2FUJI_ENABLE_DNGSDK)
     target_compile_definitions(sony2fuji_core PRIVATE SONY2FUJI_ENABLE_DNGSDK)
     target_link_libraries(sony2fuji_core ${DNGSDK_LIBRARY})
@@ -299,6 +319,11 @@ if(BUILD_CLI)
     target_include_directories(sony2fuji_cli PRIVATE third_party)
     target_link_libraries(sony2fuji_cli sony2fuji_core rawlab_edit_protocol)
     set_target_properties(sony2fuji_cli PROPERTIES OUTPUT_NAME sony2fuji)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        # main.cpp uses the wide wmain entry on Windows; MSVC links it
+        # automatically, MinGW needs the unicode CRT startup.
+        target_link_options(sony2fuji_cli PRIVATE -municode)
+    endif()
 endif()
 
 # 示例

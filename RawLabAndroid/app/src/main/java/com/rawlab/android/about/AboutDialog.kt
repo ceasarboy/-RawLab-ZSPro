@@ -52,6 +52,22 @@ fun AboutDialog(
                 TextButton(onClick = { open(UpdateRelease.AUTHOR) }) {
                     Icon(Icons.AutoMirrored.Outlined.OpenInNew, null); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.author_xiaohongshu))
                 }
+                var showLicenses by remember { mutableStateOf(false) }
+                TextButton(onClick = { showLicenses = true }) {
+                    Icon(Icons.AutoMirrored.Outlined.OpenInNew, null); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.zspro_licenses))
+                }
+                if (showLicenses) {
+                    val notices = remember { runCatching {
+                        context.assets.list("licenses").orEmpty().sorted().joinToString("
+
+") { name ->
+                            name + "
+" + context.assets.open("licenses/$name").bufferedReader().use { it.readText() }
+                        }
+                    }.getOrDefault("") }
+                    Text(notices, Modifier.heightIn(max = 220.dp).verticalScroll(rememberScrollState()),
+                        style = MaterialTheme.typography.bodySmall)
+                }
                 if (linkFailed) Text(stringResource(R.string.browser_unavailable), color = MaterialTheme.colorScheme.error)
                 HorizontalDivider()
                 Row(verticalAlignment = Alignment.CenterVertically) {

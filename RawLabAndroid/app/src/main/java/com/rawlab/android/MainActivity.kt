@@ -151,6 +151,7 @@ private fun RawLabApp(model: EditorViewModel, updates: UpdateViewModel, usage: U
             onMessageDismiss = model::dismissMessage, onLicenses = { licenses = true }, onGpuChange = model::setGpuEnabled,
             onImportLook = { openLook.launch(arrayOf("*/*")) }, onRenameLook = model::renameLook,
             onDeleteLook = model::deleteLook, onLookImportReportDismiss = model::dismissLookImportReport,
+            onAdaptStdLook = model::adaptStdLook, onBakeLookStack = model::bakeLookStack,
             onAbout = { about = true }, updateVersion = updateState.available?.version,
             onPreviewSizeChange = model::updatePreviewSize,
             onBeginDraft = model::beginDraft, onDraftEdit = model::changeDraft,

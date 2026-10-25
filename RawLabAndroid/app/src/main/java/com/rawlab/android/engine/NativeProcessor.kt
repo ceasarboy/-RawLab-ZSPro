@@ -225,6 +225,20 @@ class NativeProcessor(mode: Int = AUTO, lensDatabase: File? = null) : AutoClosea
             }
         }
 
+        // ZSPro: adapt a Panasonic STD-based look through the official
+        // STD->V-Log mapping so it reads correctly on the neutral baseline.
+        fun adaptStdLook(input: File, map: File, output: File) {
+            NativeLookBridge.adaptStd(input.path, map.path, output.path)
+        }
+
+        // ZSPro: bake a two-look stack into one display-encoding LUT (65^3).
+        fun bakeLookStack(
+            pathA: String, strengthA: Float,
+            pathB: String?, strengthB: Float, output: File
+        ) {
+            NativeLookBridge.bakeStack(pathA, strengthA, pathB.orEmpty(), strengthB, output.path)
+        }
+
         private const val MAX_DCP_SOURCE_BYTES = 128 * 1024 * 1024L
         private const val MAX_DCP_OUTPUT_BYTES = 64 * 1024 * 1024L
     }
@@ -232,6 +246,13 @@ class NativeProcessor(mode: Int = AUTO, lensDatabase: File? = null) : AutoClosea
 
 private object NativeLookBridge {
     @JvmStatic external fun validate(path: String): IntArray
+
+    // ZSPro: adapt a Panasonic STD-based look through the official mapping,
+    // or bake a two-look stack into one display-encoding LUT.
+    @JvmStatic external fun adaptStd(inPath: String, mapPath: String, outPath: String)
+    @JvmStatic external fun bakeStack(
+        pathA: String, strengthA: Float, pathB: String, strengthB: Float, outPath: String
+    )
 }
 
 private object NativeDcpBridge {

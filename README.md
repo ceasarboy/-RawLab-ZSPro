@@ -1,4 +1,28 @@
-# RawLab
+# RawLab ZSPro
+
+**RawLab ZSPro** is an enhanced GPL-3.0 distribution of the open-source
+[RawLab](https://github.com/dancancer/RawLab) project (based on upstream
+v0.8.2). Upstream's original README follows below.
+
+ZSPro additions on top of upstream v0.8.2:
+
+- **Tetrahedral 3D-LUT interpolation** on every render path (CPU, GLES,
+  Direct3D 11, Metal): 4 taps instead of 8, hue-stable in saturated regions,
+  bit-identical at lattice points.
+- **Panasonic STD base adaptation**: official STD-to-V-Log mapping turns
+  "STD photo style" look LUTs into looks that read correctly on the neutral
+  baseline (layered, gray-preserving chain; no interpolation chroma noise).
+- **Look-stack baking**: compose two looks with independent strengths into
+  one new managed look.
+- **Temperature white-balance fallback** for cameras whose LibRaw color
+  matrix is missing (sRGB-matrix fallback, 6500K anchor).
+
+License: GPL-3.0 (see [LICENSE](LICENSE) and the in-app notices). ZSPro
+source: https://github.com/ceasarboy/-RawLab-ZSPro
+
+---
+
+# RawLab (upstream)
 
 [English](README.md) | [简体中文](docs/README.zh-CN.md)
 

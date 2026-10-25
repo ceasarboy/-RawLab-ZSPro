@@ -19,6 +19,16 @@ class LUT3D {
 public:
     LUT3D() : size_(0) {}
 
+    // ZSPro: build a LUT in memory (size^3 R-fast grid). Domain stays [0,1];
+    // transfer contracts are not inferred from data.
+    static std::shared_ptr<LUT3D> fromData(int size, std::vector<RGB> data, const std::string& title = "") {
+        auto lut = std::make_shared<LUT3D>();
+        lut->size_ = size;
+        lut->data_ = std::move(data);
+        lut->title_ = title;
+        return lut;
+    }
+
     /**
      * @brief 从 .cube 文件加载 LUT
      * @param filepath .cube 文件路径

@@ -9,7 +9,7 @@
     <string name="album_square">"Square thumbnails"</string>
     <string name="album_view_options">"View options"</string>
     <string name="all_albums">"All albums"</string>
-    <string name="app_name">"RawLab"</string>
+    <string name="app_name">"RawLab ZSPro"</string>
     <string name="app_version">"Version %1$s"</string>
     <string name="as_shot">"As-Shot Setting"</string>
     <string name="author_xiaohongshu">"Author on Xiaohongshu (RED)"</string>
@@ -318,4 +318,10 @@
     <string name="wb_unavailable">"This input has no camera white-balance calibration"</string>
     <string name="white_balance">"White Balance"</string>
     <string name="zoom_fit">"Fit to window"</string>
+    <string name="zspro_adapt_std">"Adapt Panasonic STD base"</string>
+    <string name="zspro_bake_stack">"Bake look stack"</string>
+    <string name="zspro_stack_a">"Main look: %1$s"</string>
+    <string name="zspro_stack_b">"Overlay look: %1$s"</string>
+    <string name="zspro_stack_none">"None"</string>
+    <string name="zspro_licenses">"Open-source licenses"</string>
 </resources>

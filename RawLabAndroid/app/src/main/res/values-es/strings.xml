@@ -318,4 +318,10 @@
     <string name="wb_unavailable">"Esta entrada no tiene calibración de balance de blancos de cámara"</string>
     <string name="white_balance">"Balance de blancos"</string>
     <string name="zoom_fit">"Ajustar a la ventana"</string>
+    <string name="zspro_adapt_std">"Adaptar base STD de Panasonic"</string>
+    <string name="zspro_bake_stack">"Combinar y guardar LUT"</string>
+    <string name="zspro_stack_a">"Look principal: %1$s"</string>
+    <string name="zspro_stack_b">"Look superpuesto: %1$s"</string>
+    <string name="zspro_stack_none">"Ninguno"</string>
+    <string name="zspro_licenses">"Licencias de código abierto"</string>
 </resources>

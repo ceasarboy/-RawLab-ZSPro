@@ -56,6 +56,8 @@ fun EditorScreen(state: EditorState, onAlbum: () -> Unit, onFile: () -> Unit,
     onBatchExport: () -> Unit = {},
     onImportLook: () -> Unit = {}, onRenameLook: (String, String) -> Unit = { _, _ -> },
     onDeleteLook: (String) -> Unit = {}, onLookImportReportDismiss: () -> Unit = {},
+    onAdaptStdLook: (String) -> Unit = {},
+    onBakeLookStack: (String, Float, String?, Float, String) -> Unit = { _, _, _, _, _ -> },
     onAbout: () -> Unit = {}, updateVersion: String? = null,
     onPreviewSizeChange: (Int) -> Unit = {},
     onBeginDraft: (AdjustmentGroup) -> Unit = {}, onDraftEdit: (EditSettings, Boolean) -> Unit = { _, _ -> },
@@ -181,7 +183,8 @@ fun EditorScreen(state: EditorState, onAlbum: () -> Unit, onFile: () -> Unit,
                         AdjustmentDock(state, Modifier.width(sideDockWidth).fillMaxHeight(), tool, selectTool, expanded,
                             { expanded = !expanded }, compare, { compare = !compare }, onEdit, onReset,
                             onImportLook, onRenameLook, onDeleteLook, onAutoExposure, onDraftEdit,
-                            { onApplyDraft(); tool = 0 }, { onDiscardDraft(); tool = 0 }, onFilmSelected, onGeometryRatio)
+                            { onApplyDraft(); tool = 0 }, { onDiscardDraft(); tool = 0 }, onFilmSelected, onGeometryRatio,
+                            onAdaptStdLook, onBakeLookStack)
                     }
                 } else {
                     EditorCanvas(state, compare, photoCanvas, photoInfo, infoMode, { infoMode = (infoMode + 1) % 3 },
@@ -192,7 +195,8 @@ fun EditorScreen(state: EditorState, onAlbum: () -> Unit, onFile: () -> Unit,
                         AdjustmentDock(state, Modifier.fillMaxWidth().height(dockHeight), tool, selectTool, expanded,
                             { expanded = !expanded }, compare, { compare = !compare }, onEdit, onReset,
                             onImportLook, onRenameLook, onDeleteLook, onAutoExposure, onDraftEdit,
-                            { onApplyDraft(); tool = 0 }, { onDiscardDraft(); tool = 0 }, onFilmSelected, onGeometryRatio)
+                            { onApplyDraft(); tool = 0 }, { onDiscardDraft(); tool = 0 }, onFilmSelected, onGeometryRatio,
+                            onAdaptStdLook, onBakeLookStack)
                     }
                 }
             }

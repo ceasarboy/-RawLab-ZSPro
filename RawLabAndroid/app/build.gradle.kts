@@ -121,11 +121,20 @@ android {
         applicationId = "com.rawlab.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 14
-        versionName = "0.8.2"
+        versionCode = 200
+        versionName = "2.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
-        externalNativeBuild { cmake { arguments += listOf("-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON", "-DANDROID_STL=c++_shared") } }
+        externalNativeBuild { cmake {
+            arguments += listOf("-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON", "-DANDROID_STL=c++_shared")
+            // ZSPro offline overrides: pre-extracted dependency sources.
+            System.getenv("RAWLAB_LIBRAW_SOURCE")?.let {
+                arguments += listOf("-DFETCHCONTENT_SOURCE_DIR_LIBRAW=${File(it).absolutePath}")
+            }
+            System.getenv("RAWLAB_LIBTIFF_SOURCE")?.let {
+                arguments += listOf("-DFETCHCONTENT_SOURCE_DIR_RAWLAB_LIBTIFF=${File(it).absolutePath}")
+            }
+        } }
         usageProfile(preferences = "usage_analytics", environment = "PROD", defaultEnabled = true)
     }
     buildFeatures { compose = true; buildConfig = true }
