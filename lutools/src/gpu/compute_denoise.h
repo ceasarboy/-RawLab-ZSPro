@@ -36,6 +36,8 @@ public:
     virtual void dispatch(FilterParams params, FilterBuffer& source, FilterBuffer* other,
                           FilterBuffer& output, FilterBuffer* secondOutput = nullptr) = 0;
     virtual void read(FilterBuffer& buffer, size_t count, float* output) = 0;
+    // 阶段同步：等待已提交的计算完成，作为缓冲复用与回读的分界。
+    virtual void finish() {}
 };
 
 std::unique_ptr<FilterDevice> createGlesFilterDevice();

@@ -78,25 +78,66 @@ void filterPixel(uint i) {
     int x = int(i % width), y = int(i / width);
     if (stage == 0u) {
         float a = 0.0, d = 0.0;
-        for (int t = 0; t < 4; ++t) {
-            float value = readA(uint(y) * width + uint(periodicIndex(x + int(step) * (2 - t), int(width))));
-            a += db2Low(t) * value; d += db2High(t) * value;
+        if (x >= 3 * int(step) && x + 2 * int(step) < int(width)) {
+            // 内部像素不需要周期回卷：以基址递推，省掉每个抽头的取模与分支。
+            uint index = uint(y) * width + uint(x + 2 * int(step));
+            uint decrement = uint(step);
+            for (int t = 0; t < 4; ++t) {
+                float value = readA(index);
+                a += db2Low(t) * value; d += db2High(t) * value;
+                index -= decrement;
+            }
+        } else {
+            for (int t = 0; t < 4; ++t) {
+                float value = readA(uint(y) * width + uint(periodicIndex(x + int(step) * (2 - t), int(width))));
+                a += db2Low(t) * value; d += db2High(t) * value;
+            }
         }
         writeA(i, a); writeB(i, d);
     } else if (stage == 1u) {
         float value = 0.0;
-        for (int t = 0; t < 4; ++t) {
-            float coefficient = direction == 1u || direction == 3u ? db2High(t) : db2Low(t);
-            value += coefficient * readA(uint(periodicIndex(y + int(step) * (2 - t), int(height))) * width + uint(x));
+        if (y >= int(step) && y + 2 * int(step) < int(height)) {
+            uint index = uint(x) + uint(y + 2 * int(step)) * width;
+            uint decrement = uint(step) * width;
+            for (int t = 0; t < 4; ++t) {
+                float coefficient = direction == 1u || direction == 3u ? db2High(t) : db2Low(t);
+                value += coefficient * readA(index);
+                index -= decrement;
+            }
+        } else {
+            for (int t = 0; t < 4; ++t) {
+                float coefficient = direction == 1u || direction == 3u ? db2High(t) : db2Low(t);
+                value += coefficient * readA(uint(periodicIndex(y + int(step) * (2 - t), int(height))) * width + uint(x));
+            }
         }
         writeA(i, direction == 0u ? value : value / float(1u << level));
     } else if (stage == 2u || stage == 3u) {
         float sum = 0.0, correction = 0.0;
-        for (int offset = -int(radius); offset <= int(radius); ++offset) {
-            float value = stage == 2u ? readA(uint(y) * width + uint(reflectIndex(x + offset, int(width), true))) :
-                readB(uint(reflectIndex(y + offset, int(height), true)) * width + uint(x));
-            float delta = (stage == 2u ? value * value : value) - correction;
-            float next = sum + delta; correction = (next - sum) - delta; sum = next;
+        int extent = 2 * int(radius) + 1;
+        if (stage == 2u && x >= int(radius) && x + int(radius) < int(width)) {
+            // 水平能量窗：内部行按连续地址读取，避免每抽头的反射索引计算。
+            uint index = uint(y) * width + uint(x - int(radius));
+            for (int t = 0; t < extent; ++t) {
+                float value = readA(index + uint(t));
+                float delta = value * value - correction;
+                float next = sum + delta; correction = (next - sum) - delta; sum = next;
+            }
+        } else if (stage == 3u && y >= int(radius) && y + int(radius) < int(height)) {
+            // 垂直能量窗：内部列按行跨度递推。
+            uint index = uint(y - int(radius)) * width + uint(x);
+            for (int t = 0; t < extent; ++t) {
+                float value = readB(index);
+                float delta = value - correction;
+                float next = sum + delta; correction = (next - sum) - delta; sum = next;
+                index += width;
+            }
+        } else {
+            for (int offset = -int(radius); offset <= int(radius); ++offset) {
+                float value = stage == 2u ? readA(uint(y) * width + uint(reflectIndex(x + offset, int(width), true))) :
+                    readB(uint(reflectIndex(y + offset, int(height), true)) * width + uint(x));
+                float delta = (stage == 2u ? value * value : value) - correction;
+                float next = sum + delta; correction = (next - sum) - delta; sum = next;
+            }
         }
         float energy = sum / float(2u * radius + 1u);
         if (stage == 2u) writeA(i, energy);
@@ -107,10 +148,25 @@ void filterPixel(uint i) {
         }
     } else if (stage == 4u || stage == 5u) {
         float value = 0.0;
-        for (int t = 0; t < 4; ++t) {
-            uint index = stage == 4u ? uint(periodicIndex(y + int(step) * (t - 2), int(height))) * width + uint(x) :
-                uint(y) * width + uint(periodicIndex(x + int(step) * (t - 2), int(width)));
-            value += .5 * db2Low(t) * readA(index) + .5 * db2High(t) * readB(index);
+        if (stage == 4u && y >= 2 * int(step) && y + int(step) < int(height)) {
+            uint index = uint(y - 2 * int(step)) * width + uint(x);
+            uint stride = uint(step) * width;
+            for (int t = 0; t < 4; ++t) {
+                value += .5 * db2Low(t) * readA(index) + .5 * db2High(t) * readB(index);
+                index += stride;
+            }
+        } else if (stage == 5u && x >= 2 * int(step) && x + int(step) < int(width)) {
+            uint index = uint(y) * width + uint(x - 2 * int(step));
+            for (int t = 0; t < 4; ++t) {
+                value += .5 * db2Low(t) * readA(index) + .5 * db2High(t) * readB(index);
+                index += uint(step);
+            }
+        } else {
+            for (int t = 0; t < 4; ++t) {
+                uint index = stage == 4u ? uint(periodicIndex(y + int(step) * (t - 2), int(height))) * width + uint(x) :
+                    uint(y) * width + uint(periodicIndex(x + int(step) * (t - 2), int(width)));
+                value += .5 * db2Low(t) * readA(index) + .5 * db2High(t) * readB(index);
+            }
         }
         writeA(i, value);
     } else if (stage == 6u) {

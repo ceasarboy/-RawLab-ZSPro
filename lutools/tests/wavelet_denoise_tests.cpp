@@ -277,6 +277,40 @@ void checkColorEdgesAndRamp() {
     }
 }
 
+void setBandRows(const char* value) {
+#if defined(_WIN32)
+    _putenv_s("RAWLAB_DENOISE_BAND_ROWS", value ? value : "");
+#else
+    if (value) setenv("RAWLAB_DENOISE_BAND_ROWS", value, 1);
+    else unsetenv("RAWLAB_DENOISE_BAND_ROWS");
+#endif
+}
+
+void checkBandedRestore() {
+    // 45MP 导出走分带归一化/恢复；分带边界必须与整幅一致（逐位相等），否则会出现横向接缝。
+    ImageData truth(2400,900);
+    std::mt19937 rng(5077);
+    std::normal_distribution<float> noise(0,.012f);
+    for (int y=0;y<truth.height;++y) for (int x=0;x<truth.width;++x) {
+        const float ramp=.03f*(x/float(truth.width)-.5f), tint=.02f*(y/float(truth.height)-.5f);
+        truth.at(x,y)={.18f+ramp,.18f+tint,.18f-ramp};
+    }
+    auto noisy=truth;
+    for (auto& p:noisy.pixels) { p.r+=noise(rng); p.g+=noise(rng); p.b+=noise(rng); }
+    const WaveletDenoiseOptions options{true,40,46,50};
+    auto narrow=noisy, wide=noisy;
+    setBandRows("97");
+    assert(applyWaveletDenoise(narrow,options)==ErrorCode::Success);
+    setBandRows("100000");
+    assert(applyWaveletDenoise(wide,options)==ErrorCode::Success);
+    setBandRows(nullptr);
+    assert(std::memcmp(narrow.pixels.data(),wide.pixels.data(),narrow.pixels.size()*sizeof(RGB))==0);
+    for (size_t i=0;i<wide.pixels.size();++i) {
+        assert(std::isfinite(wide.pixels[i].r) && std::isfinite(wide.pixels[i].g) && std::isfinite(wide.pixels[i].b));
+    }
+    std::cout << "PASS: banded normalize/restore matches full-image output exactly\n";
+}
+
 void checkAnalysisReuse() {
     ImageData source(256,256);
     std::mt19937 rng(1539);
@@ -388,6 +422,7 @@ int main(int argc, char** argv) {
     }
     checkReflectedTilePlanes();
     checkParallelTiles();
+    checkBandedRestore();
     checkAnalysisReuse();
     checkImmutableSourceReload();
     checkInversePhases();

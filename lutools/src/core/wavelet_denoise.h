@@ -22,6 +22,8 @@ struct WaveletDenoiseDiagnostics {
     bool analysisReused = false;
     bool coarseAnalysisReused = false;
     float a[3] = {}, b[3] = {};
+    // 阶段耗时（毫秒），用于定位导出/预览的降噪成本；不参与缓存命中与结果计算。
+    double analysisMs = 0, filterMs = 0, restoreMs = 0;
 };
 
 class WaveletDenoiseAnalysisCache {

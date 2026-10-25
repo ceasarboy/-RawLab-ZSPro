@@ -66,6 +66,10 @@ class Device final : public FilterDevice {
     EGLContext context = EGL_NO_CONTEXT;
     EGLSurface surface = EGL_NO_SURFACE;
     GLuint program = 0, constants = 0;
+    // std140 uniform 起点按 256 字节分槽，避免每次派发改写同一区域触发驱动同步。
+    static constexpr GLintptr uniformSlot = 256;
+    static constexpr GLsizeiptr uniformSlots = 256;
+    GLsizeiptr uniformCursor = 0;
     FilterBufferPtr dummy;
     size_t blockLimit = 0;
     uint32_t dispatchLimit = 0;
@@ -123,7 +127,7 @@ public:
         glGetProgramiv(program, GL_LINK_STATUS, &ok);
         if (!ok) throw std::runtime_error("GLES filter shader link failed");
         glGenBuffers(1, &constants); glBindBuffer(GL_UNIFORM_BUFFER, constants);
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(FilterParams), nullptr, GL_DYNAMIC_DRAW);
+        glBufferData(GL_UNIFORM_BUFFER, uniformSlot * uniformSlots, nullptr, GL_DYNAMIC_DRAW);
         dummy = allocate(1);
         checked();
     }
@@ -148,13 +152,18 @@ public:
         for (uint32_t offset = 0; offset < params.count;) {
             const uint32_t chunk = std::min(dispatchLimit, params.count - offset);
             params.baseIndex = offset;
+            const auto slot = uniformCursor;
+            uniformCursor = (uniformCursor + 1) % uniformSlots;
             glBindBuffer(GL_UNIFORM_BUFFER, constants);
-            glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(params), &params);
+            glBufferSubData(GL_UNIFORM_BUFFER, slot * uniformSlot, sizeof(FilterParams), &params);
+            glBindBufferRange(GL_UNIFORM_BUFFER, 0, constants, slot * uniformSlot, sizeof(FilterParams));
             glDispatchCompute((chunk + groupSize - 1) / groupSize, 1, 1);
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT);
-            checked(); offset += chunk;
+            offset += chunk;
         }
         for (GLuint i = 0; i < 4; ++i) glBindBufferBase(GL_SHADER_STORAGE_BUFFER, i, 0);
+        // 每次派发后查询错误会迫使驱动同步；整批提交后再统一检查。
+        checked();
     }
     void read(FilterBuffer& buffer, size_t count, float* output) override {
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, static_cast<Buffer&>(buffer).name);
@@ -165,6 +174,7 @@ public:
         if (!glUnmapBuffer(GL_SHADER_STORAGE_BUFFER)) throw std::runtime_error("GLES filter buffer contents lost");
         checked();
     }
+    void finish() override { glFinish(); }
 };
 } // namespace
 std::unique_ptr<FilterDevice> createGlesFilterDevice() {

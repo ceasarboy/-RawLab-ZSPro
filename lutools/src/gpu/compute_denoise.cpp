@@ -8,11 +8,8 @@
 namespace sony2fuji {
 namespace {
 bool finiteOutput(FilterDevice& device, FilterBuffer& buffer, size_t count, float* output) {
-    std::vector<float> result(count);
-    device.read(buffer, count, result.data());
-    if (!std::all_of(result.begin(), result.end(), [](float value) { return std::isfinite(value); })) return false;
-    std::memcpy(output, result.data(), count * sizeof(float));
-    return true;
+    device.read(buffer, count, output);
+    return std::all_of(output, output + count, [](float value) { return std::isfinite(value); });
 }
 
 void dispatch(FilterDevice& device, FilterParams& params, FilterStage stage,
@@ -74,6 +71,8 @@ bool computeWaveletFilter(FilterDevice& device, const float* input, int width, i
             dispatch(device, p, FilterStage::SwtColumns, direction < 2 ? *low : *high, nullptr, *bands[band]);
         }
     }
+    // 阶段分界：等待前向 SWT 完成，后续阶段会复用 low/high 缓冲。
+    device.finish();
     for (int scale = 0; scale < settings.depth; ++scale) {
         p.level = settings.depth - scale;
         p.radius = (p.level > 4 ? (1u << (p.level - 1)) + 1 : 7) / 2;
@@ -86,6 +85,8 @@ bool computeWaveletFilter(FilterDevice& device, const float* input, int width, i
             band.swap(spare);
         }
     }
+    // 阶段分界：能量/阈值阶段结束，逆变换开始前确认所有派发已完成。
+    device.finish();
     for (int level = settings.depth; level > 0; --level) {
         p.level = level; p.step = 1u << (level - 1);
         const int band = 1 + (settings.depth - level) * 3;
@@ -93,6 +94,8 @@ bool computeWaveletFilter(FilterDevice& device, const float* input, int width, i
         dispatch(device, p, FilterStage::IswtColumns, *bands[band + 1], bands[band + 2].get(), *high);
         dispatch(device, p, FilterStage::IswtRows, *low, high.get(), *bands[0]);
     }
+    // 回读前等待逆变换完成；回读本身也依赖此同步。
+    device.finish();
     return finiteOutput(device, *bands[0], count, output);
 }
 

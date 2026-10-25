@@ -137,9 +137,9 @@ Serialize render, configuration and close calls on the same instance. Do not sha
 
 ## 4. GPU 与生命周期 / GPU and Lifecycle
 
-Android 照片后端需要 OpenGL ES 3.1，支持缩放、曝光/色彩转换、中性映射、F-Log2、LUT/强度和逐像素明暗处理。Auto 在不可用时回退 CPU；Force 会报告处理失败。RAW 解码及文件编码仍在 CPU；邻域锐化/降噪目前不走 GLES。
+Android 照片后端需要 OpenGL ES 3.1，支持缩放、曝光/色彩转换、中性映射、F-Log2、LUT/强度、逐像素明暗、细节/暗角颗粒，以及整幅小波降噪的滤波阶段。Auto 在不可用时回退 CPU；Force 会报告处理失败。RAW 解码、噪声估计及文件编码仍在 CPU。
 
-The Android photo backend requires OpenGL ES 3.1 and accelerates resizing, exposure/matrices, neutral mapping, F-Log2, LUT/blending and pointwise tone. Auto falls back to CPU; Force fails when unavailable. RAW decoding/file encoding and neighborhood sharpening/denoise are not GLES-accelerated.
+The Android photo backend requires OpenGL ES 3.1 and accelerates resizing, exposure/matrices, neutral mapping, F-Log2, LUT/blending, pointwise tone, detail/vignette-grain, and the filtering stages of full-image wavelet denoise. Auto falls back to CPU; Force fails when unavailable. RAW decoding, noise estimation and file encoding remain CPU work.
 
 会话拥有 EGL context、缓冲及单张线性预览缓存。全尺寸图像按设备限制分块上传；预览缓存按实际 RAW 解码修订号失效，不能供导出使用。`sony2fuji_session_get_last_backend` 返回新增的 `SONY2FUJI_BACKEND_GLES` 时，才证明本次完整像素请求在 GLES 上完成。旧的通用 LUT 函数不使用此照片缓存。
 

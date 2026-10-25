@@ -2,12 +2,16 @@
 #include "sony2fuji/color_converter.h"
 #include "gpu/denoise.h"
 #include <atomic>
+#include <chrono>
 #include <cmath>
 #include <algorithm>
 #include <array>
 #include <cstdlib>
 #include <memory>
 #include <vector>
+#if defined(__ANDROID__)
+#include <android/log.h>
+#endif
 
 #if defined(SONY2FUJI_ENABLE_WAVELET_DENOISE)
 #include "wavelet_tile.h"
@@ -153,6 +157,15 @@ NoiseModel fitNoise(const std::vector<Sample>& samples) {
         model.a[c]=static_cast<float>(a); model.b[c]=static_cast<float>(b);
     }
     return model;
+}
+
+// 单带目标字节数：把整幅中间副本换成分带副本，同时保留并行度。
+// RAWLAB_DENOISE_BAND_ROWS 允许测试强制指定带高，用来验证分带不改变结果。
+int bandRows(int width,size_t target=size_t(16)<<20) {
+    const char* setting=std::getenv("RAWLAB_DENOISE_BAND_ROWS");
+    if (setting && std::atoi(setting)>0) return std::atoi(setting);
+    const size_t row=std::max<size_t>(1,size_t(width)*sizeof(cv::Vec3f));
+    return std::max(8,std::min(4096,int(target/row)));
 }
 
 cv::Mat normalize(const cv::Mat& rgb,const NoiseModel& model) {
@@ -364,30 +377,44 @@ cv::Mat filter(const cv::Mat& transformed,const NoiseModel& model,const sony2fuj
                 const int radius=c!=0 && coarse ? coarseHalo : halo, divisor=c!=0 && coarse ? alignment : 16;
                 const auto plane=sony2fuji::waveletTilePlane(transformed,{x,y,w,h},radius,divisor,c);
                 const auto filtered=filterPlane(plane,model,options,c,gpuMode,gpuUsed);
-                for (int py=0;py<h;++py) for (int px=0;px<w;++px)
-                    output.at<cv::Vec3f>(y+py,x+px)[c]=filtered.at<float>(radius+py,radius+px);
+                for (int py=0;py<h;++py) {
+                    auto* row=output.ptr<cv::Vec3f>(y+py)+x;
+                    const auto* values=filtered.ptr<float>(radius+py)+radius;
+                    for (int px=0;px<w;++px) row[px][c]=values[px];
+                }
             }
         }
     },stripes);
     return output;
 }
 
-void restore(cv::Mat& rgb,cv::Mat filtered,const NoiseModel& model) {
-    cv::Mat normalized;
-    cv::transform(filtered,normalized,opponent().t());
-    filtered.release();
-    cv::Mat difference=normalize(rgb,model);
-    cv::subtract(difference,normalized,difference);
-    cv::multiply(difference,difference,difference);
-    cv::GaussianBlur(difference,difference,{},3);
-    cv::parallel_for_(cv::Range(0,rgb.rows),[&](const cv::Range& range) {
-        for (int y=range.start;y<range.end;++y) for (int x=0;x<rgb.cols;++x) for (int c=0;c<3;++c) {
-            const float a=std::max(model.a[c],1e-12f), b=std::max(model.b[c],1e-12f)+.375f*a*a;
-            const float value=normalized.at<cv::Vec3f>(y,x)[c], positive=std::max(value,0.f);
-            rgb.at<cv::Vec3f>(y,x)[c]=std::sqrt(b)*value+.25f*a*positive*positive+
-                (value>0 ? .25f*a*difference.at<cv::Vec3f>(y,x)[c] : 0.f);
-        }
-    });
+void restore(cv::Mat& rgb,const cv::Mat& filtered,const NoiseModel& model) {
+    const cv::Matx33f matrix=opponent().t();
+    const int width=rgb.cols,height=rgb.rows;
+    // 分带恢复：整幅归一化与差值副本各约 545 MiB，45MP 导出时会触发换页。
+    const int band=bandRows(width,size_t(8)<<20),halo=16;  // 高斯 sigma=3 对应 25 抽头、半径 12
+    for (int y0=0;y0<height;y0+=band) {
+        const int rows=std::min(band,height-y0),top=std::min(halo,y0),bottom=std::min(halo,height-y0-rows);
+        const auto extent=filtered.rowRange(y0-top,y0+rows+bottom);
+        cv::Mat normalized,difference;
+        cv::transform(extent,normalized,matrix);
+        cv::subtract(normalize(rgb.rowRange(y0-top,y0+rows+bottom),model),normalized,difference);
+        cv::multiply(difference,difference,difference);
+        cv::GaussianBlur(difference,difference,{},3);
+        cv::parallel_for_(cv::Range(0,rows),[&](const cv::Range& range) {
+            for (int y=range.start;y<range.end;++y) {
+                auto* row=rgb.ptr<cv::Vec3f>(y0+y);
+                const auto* values=normalized.ptr<cv::Vec3f>(top+y);
+                const auto* detail=difference.ptr<cv::Vec3f>(top+y);
+                for (int x=0;x<width;++x) for (int c=0;c<3;++c) {
+                    const float a=std::max(model.a[c],1e-12f), b=std::max(model.b[c],1e-12f)+.375f*a*a;
+                    const float value=values[x][c], positive=std::max(value,0.f);
+                    row[x][c]=std::sqrt(b)*value+.25f*a*positive*positive+
+                        (value>0 ? .25f*a*detail[x][c] : 0.f);
+                }
+            }
+        });
+    }
 }
 } // namespace
 #endif
@@ -448,6 +475,7 @@ ErrorCode applyWaveletDenoise(ImageData& image, const WaveletDenoiseOptions& opt
     static_assert(sizeof(RGB)==sizeof(float)*3);
     cv::Mat rgb(image.height,image.width,CV_32FC3,image.pixels.data());
     if (!cv::checkRange(rgb)) return ErrorCode::InvalidFormat;
+    const auto started = std::chrono::steady_clock::now();
     WaveletDenoiseAnalysisCache::Impl local;
     auto* state = &local;
     bool reused = false;
@@ -471,10 +499,17 @@ ErrorCode applyWaveletDenoise(ImageData& image, const WaveletDenoiseOptions& opt
     if (samples.size()<8) { state->ready=true; return ErrorCode::Success; }
     if (!reused) state->model=fitNoise(samples);
     auto& model = state->model;
-    cv::Mat transformed;
+    cv::Mat transformed(image.height,image.width,CV_32FC3);
     {
-        const cv::Mat normalized=normalize(rgb,model);
-        cv::transform(normalized,transformed,opponent());
+        // 分带归一化与换域：整幅副本在 45MP 下约 545 MiB，叠加不可变源会逼近原生堆上限。
+        const cv::Matx33f matrix=opponent();
+        const int band=bandRows(image.width);
+        for (int y=0;y<image.height;y+=band) {
+            const int rows=std::min(band,image.height-y);
+            cv::Mat normalized;
+            cv::transform(normalize(rgb.rowRange(y,y+rows),model),normalized,matrix);
+            normalized.copyTo(transformed.rowRange(y,y+rows));
+        }
     }
     // 校准和滤波只读系数；恢复阶段再从不可变源按同一矩阵重建工作图。
     if (reloadable) { rgb.release(); image = {}; }
@@ -488,20 +523,28 @@ ErrorCode applyWaveletDenoise(ImageData& image, const WaveletDenoiseOptions& opt
         }
     }
     std::atomic<bool> gpuUsed{false};
+    const auto analysedAt = std::chrono::steady_clock::now();
     cv::Mat filtered;
     try { filtered = filter(transformed, model, options, gpuMode, gpuUsed); }
     catch (const WaveletGpuFailure&) { return ErrorCode::ProcessingError; }
+    const auto filteredAt = std::chrono::steady_clock::now();
     transformed.release();
     if (reloadable) {
         const auto result = reload();
         if (result != ErrorCode::Success) return result;
         rgb = cv::Mat(image.height,image.width,CV_32FC3,image.pixels.data());
     }
-    restore(rgb,std::move(filtered),model);
+    restore(rgb,filtered,model);
+    filtered.release();
     if (diagnostics) {
         diagnostics->applied=true;
         diagnostics->gpuUsed=gpuUsed.load(std::memory_order_relaxed);
         for (int c=0;c<3;++c) { diagnostics->a[c]=model.a[c]; diagnostics->b[c]=model.b[c]; }
+        const auto finishedAt = std::chrono::steady_clock::now();
+        auto ms = [](auto from, auto to) { return std::chrono::duration<double, std::milli>(to - from).count(); };
+        diagnostics->analysisMs=ms(started, analysedAt);
+        diagnostics->filterMs=ms(analysedAt, filteredAt);
+        diagnostics->restoreMs=ms(filteredAt, finishedAt);
     }
     return ErrorCode::Success;
 #else

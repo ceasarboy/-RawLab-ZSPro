@@ -16,8 +16,11 @@ about every Android GPU or the performance of RAW decoding.
 - GPU stages: preview resize in linear space, matrices/exposure, neutral
   display mapping, F-Log2, LUT/strength, pointwise tone, final display resize.
 - RAW unpacking, camera WB/demosaic and JPEG/PNG encoding remain CPU work.
-  Neighborhood sharpening/denoise (not exposed by this editor) use CPU in
-  Auto; Force fails rather than pretending that a GPU render succeeded.
+  At the time of this snapshot, neighborhood sharpening/denoise (not exposed by
+  this editor) used CPU in Auto, and Force failed rather than pretending that a
+  GPU render succeeded. Later builds accelerate detail, vignette/grain and the
+  wavelet-denoise filtering stages on GLES; see
+  [GPU denoise performance](gpu-denoise-performance-verification.md).
 - The app defaults to Auto and permits CPU selection. The initial canvas
   backend/timing badge was removed in the white-balance follow-up below.
   Native backend diagnostics remain available. `SONY2FUJI_BACKEND_GLES` was asserted in

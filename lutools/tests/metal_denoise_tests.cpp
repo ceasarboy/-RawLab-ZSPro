@@ -1,10 +1,16 @@
 #include "gpu/denoise.h"
 #include "native_gpu_test_support.h"
 #include "core/wavelet_denoise.h"
+#ifdef SONY2FUJI_ENABLE_CHROMA_DENOISE
 #include "core/chroma_denoise.h"
+#endif
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+#if __has_include(<opencv2/ximgproc/edge_filter.hpp>)
+// 安卓 OpenCV SDK 不含 contrib：引导滤波对照仅在有 ximgproc 的桌面构建中执行。
 #include <opencv2/ximgproc/edge_filter.hpp>
+#define RAWLAB_TEST_GUIDED_REFERENCE 1
+#endif
 #include <wavelib.h>
 #include <algorithm>
 #include <cassert>
@@ -87,6 +93,7 @@ static void waveletTests() {
     }
 }
 
+#ifdef RAWLAB_TEST_GUIDED_REFERENCE
 static void guidedTests() {
     std::mt19937 random(73);
     std::normal_distribution<float> noise(0, 2);
@@ -108,6 +115,7 @@ static void guidedTests() {
         }
     }
 }
+#endif
 
 static std::vector<float> pixels(const ImageData& image) {
     std::vector<float> result;
@@ -132,6 +140,7 @@ static void denoiserTests() {
         assert(diagnostics.applied && diagnostics.gpuUsed);
         compare(pixels(cpu), pixels(gpu), 5e-5f, 5e-5f, "complete wavelet denoiser");
     }
+#ifdef SONY2FUJI_ENABLE_CHROMA_DENOISE
     for (int mode : {1, 2}) {
         auto cpu = image, gpu = image;
         ChromaDenoiseDiagnostics diagnostics;
@@ -140,14 +149,19 @@ static void denoiserTests() {
         assert(diagnostics.applied && diagnostics.gpuUsed);
         compare(pixels(cpu), pixels(gpu), .0002f, .0002f, "complete chroma denoiser");
     }
+#endif
     auto unchanged = image;
     assert(applyWaveletDenoise(unchanged, {false, 50, 50, 50}, nullptr, GpuMode::Force) == ErrorCode::Success);
+#ifdef SONY2FUJI_ENABLE_CHROMA_DENOISE
     assert(applyChromaDenoise(unchanged, 0, nullptr, GpuMode::Force) == ErrorCode::Success);
+#endif
     assert(pixels(unchanged) == pixels(image));
     ImageData small(1, 1); small.at(0, 0) = {0, .5f, 2};
     const auto original = pixels(small);
     assert(applyWaveletDenoise(small, {true, 100, 100, 100}, nullptr, GpuMode::Force) == ErrorCode::Success);
+#ifdef SONY2FUJI_ENABLE_CHROMA_DENOISE
     assert(applyChromaDenoise(small, 2, nullptr, GpuMode::Force) == ErrorCode::Success);
+#endif
     assert(pixels(small) == original);
 }
 
@@ -159,7 +173,9 @@ int main() {
     }
 #endif
     waveletTests();
+#ifdef RAWLAB_TEST_GUIDED_REFERENCE
     guidedTests();
+#endif
     denoiserTests();
 #if defined(SONY2FUJI_ENABLE_GLES) || defined(SONY2FUJI_ENABLE_D3D11)
     ImageData source(513, 257);

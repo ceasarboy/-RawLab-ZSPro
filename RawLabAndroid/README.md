@@ -171,6 +171,12 @@ contract on/off、IEEE denormal 模式允许通过；限制只作用于被检查
 原尺寸 CPU 批处理仍以既有 240 秒用例验证，GPU 开关的模式约定和画质不变。
 热点证据、逐像素对照和真机结果见 [CPU 性能验证](cpu-denoise-performance-verification.md)。
 
+`gpu_filter_tests`（`tests/metal_denoise_tests.cpp`）在安卓 GPU + 小波降噪构建中同样是
+独立目标，用 wavelib/OpenCV 参考输出在 `5e-5` 容差内校验 GLES 计算着色器；安卓 OpenCV
+SDK 没有 contrib，引导滤波对照和色度降噪部分按可选依赖裁剪。带降噪导出的阶段耗时、
+着色器寻址优化前后对比与真机结果见
+[GPU 降噪性能验证](gpu-denoise-performance-verification.md)。
+
 ```sh
 # Repository root: shared rendering regressions.
 bash lutools/test.sh

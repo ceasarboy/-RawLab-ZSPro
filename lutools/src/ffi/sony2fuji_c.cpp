@@ -35,6 +35,9 @@
 #include <filesystem>
 #include <fstream>
 #include <sys/stat.h>
+#if defined(SONY2FUJI_PLATFORM_ANDROID)
+#include <android/log.h>
+#endif
 
 struct sony2fuji_session {
     sony2fuji::GpuConfig gpu_config;
@@ -1534,8 +1537,13 @@ static sony2fuji_status processImpl(
             }
             sony2fuji::ColorConverter converter;
             converter.convertImage(image, toCoreColorSpace(color_space), sony2fuji::ColorSpace::sRGB);
-            const auto mode = gpuPipeline ? sony2fuji::GpuMode::Force : sony2fuji::GpuMode::Off;
+            // 降噪后端与整图管线解耦：display-input LUT 只影响整图走 CPU，
+            // 不应连带把降噪降级为整图 CPU 降噪。Auto 在 GPU 失败后由下方整图回落 CPU。
+            const auto mode = session->gpu_config.mode == sony2fuji::GpuMode::Off
+                ? sony2fuji::GpuMode::Off : sony2fuji::GpuMode::Force;
             sony2fuji::WaveletDenoiseDiagnostics diagnostics;
+            // 导出时 applyWaveletDenoise 会先释放再重建工作副本，日志尺寸要提前留存。
+            const uint32_t denoise_width = image.width, denoise_height = image.height;
             auto filter = [&](sony2fuji::GpuMode backend) {
                 ++session->wavelet_cache.diagnostics.filterRuns;
                 const auto result = sony2fuji::applyWaveletDenoise(image, session->wavelet_denoise, &diagnostics,
@@ -1551,6 +1559,20 @@ static sony2fuji_status processImpl(
                 gpuPipeline = false;
                 result = filter(sony2fuji::GpuMode::Off);
             }
+#if defined(SONY2FUJI_PLATFORM_ANDROID)
+            // 导出/预览都打印一行：分析、分块滤波、恢复各自耗时与后端，便于定位降噪开销。
+            __android_log_print(ANDROID_LOG_INFO, "RawLabDenoise",
+                "size=%ux%u intent=%d request=%d gpuPipeline=%d fallback=%d ok=%d applied=%d gpuUsed=%d flat=%d "
+                "analysisReused=%d coarseReused=%d options=%d:%.0f/%.0f/%.0f analysisMs=%.0f filterMs=%.0f restoreMs=%.0f",
+                denoise_width, denoise_height, static_cast<int>(local.intent),
+                static_cast<int>(session->gpu_config.mode), gpuPipeline ? 1 : 0, fallback ? 1 : 0,
+                result == sony2fuji::ErrorCode::Success ? 1 : 0, diagnostics.applied ? 1 : 0,
+                diagnostics.gpuUsed ? 1 : 0, diagnostics.flatTiles,
+                diagnostics.analysisReused ? 1 : 0, diagnostics.coarseAnalysisReused ? 1 : 0,
+                session->wavelet_denoise.enabled ? 1 : 0, session->wavelet_denoise.luma,
+                session->wavelet_denoise.chroma, session->wavelet_denoise.coarse,
+                diagnostics.analysisMs, diagnostics.filterMs, diagnostics.restoreMs);
+#endif
             if (result != sony2fuji::ErrorCode::Success) return mapError(result);
             if (entry && !fallback)
                 session->wavelet_cache.store(*entry, image, session->wavelet_denoise, session->gpu_config.mode);
