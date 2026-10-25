@@ -135,7 +135,7 @@ fun EditorScreen(state: EditorState, onAlbum: () -> Unit, onFile: () -> Unit,
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }, topBar = {
         TopAppBar(modifier = Modifier.alpha(surroundingAlpha), title = {
             Column {
-                Text("RawLab", style = MaterialTheme.typography.titleMedium)
+                Text("RawLab ZSPro", style = MaterialTheme.typography.titleMedium)
                 state.photo?.let { Text(it.name, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelSmall) }
             }
         }, navigationIcon = {
