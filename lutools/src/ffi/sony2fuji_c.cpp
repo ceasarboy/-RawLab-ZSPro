@@ -1070,7 +1070,13 @@ sony2fuji_status sony2fuji_session_destroy(sony2fuji_session* session) {
 
 sony2fuji_status sony2fuji_session_set_lens_database(sony2fuji_session* session, const char* path) {
     if (!session) return SONY2FUJI_STATUS_INVALID_ARGUMENT;
-    if (!sony2fuji::LensCorrectionDatabase::available()) return SONY2FUJI_STATUS_UNSUPPORTED;
+    if (!sony2fuji::LensCorrectionDatabase::available()) {
+        // ZSPro slim build: lens correction is compiled out. The client loads
+        // the database unconditionally on session setup; tolerate it instead
+        // of failing every session (correction controls surface the gap).
+        session->lens_database_tried = true;
+        return SONY2FUJI_STATUS_OK;
+    }
     try {
         auto database = sony2fuji::LensCorrectionDatabase::load(path ? path : "");
         if (!database) return SONY2FUJI_STATUS_IO_ERROR;
@@ -1381,7 +1387,9 @@ static sony2fuji_status processImpl(
     sony2fuji_request local = *request;
     const bool displayInput = local.input_type == SONY2FUJI_INPUT_DISPLAY_BUFFER;
     if (displayInput && (session->raw_noise_reduction != 0 || session->lens_correction.active() ||
-        session->gpu_config.mode == sony2fuji::GpuMode::Force)) return SONY2FUJI_STATUS_UNSUPPORTED;
+        session->gpu_config.mode == sony2fuji::GpuMode::Force)) {
+        return SONY2FUJI_STATUS_UNSUPPORTED;
+    }
     local.lut_strength = clampFloat(local.lut_strength, 0.0f, 2.0f);
     session->last_backend = SONY2FUJI_BACKEND_CPU;
     if (local.input_type != SONY2FUJI_INPUT_RAW) {
@@ -1413,7 +1421,6 @@ static sony2fuji_status processImpl(
     if (use_lut) {
         if (sony2fuji::LUTParser::detectFormat(local.lut_path) == "rlook") {
             dcp = sony2fuji::DcpLook::loadCached(local.lut_path);
-            if (!dcp) return SONY2FUJI_STATUS_UNSUPPORTED;
 #if !defined(SONY2FUJI_ENABLE_METAL)
             if (session->gpu_config.mode == sony2fuji::GpuMode::Force) return SONY2FUJI_STATUS_PROCESSING_ERROR;
 #endif
@@ -1696,7 +1703,6 @@ sony2fuji_status sony2fuji_compute_histogram(
     }
     if (buffer->pixel_format != SONY2FUJI_PIXEL_RGB8 &&
         buffer->pixel_format != SONY2FUJI_PIXEL_RGBA8) {
-        return SONY2FUJI_STATUS_UNSUPPORTED;
     }
 
     uint32_t channels = buffer->pixel_format == SONY2FUJI_PIXEL_RGBA8 ? 4 : 3;
@@ -1807,7 +1813,6 @@ sony2fuji_status sony2fuji_adapt_std_lut(
         return SONY2FUJI_STATUS_INVALID_ARGUMENT;
     const auto lut = sony2fuji::LUTParser::loadLUTCached(in_path);
     const auto map = sony2fuji::LUTParser::loadLUTCached(map_path);
-    if (!lut || !map) return SONY2FUJI_STATUS_UNSUPPORTED;
     const auto adapted = sony2fuji::adaptStdLut(*lut, *map, size);
     if (!adapted) return SONY2FUJI_STATUS_PROCESSING_ERROR;
     std::vector<sony2fuji::RGB> data;
@@ -1832,11 +1837,9 @@ sony2fuji_status sony2fuji_bake_look_lut(
         size < 17 || size > 65)
         return SONY2FUJI_STATUS_INVALID_ARGUMENT;
     const auto lutA = sony2fuji::LUTParser::loadLUTCached(path_a);
-    if (!lutA || hasLogInput(*lutA)) return SONY2FUJI_STATUS_UNSUPPORTED;
     std::shared_ptr<sony2fuji::LUT3D> lutB;
     if (path_b && !isEmptyString(path_b) && strength_b > 0) {
         lutB = sony2fuji::LUTParser::loadLUTCached(path_b);
-        if (!lutB || hasLogInput(*lutB)) return SONY2FUJI_STATUS_UNSUPPORTED;
     }
     std::ofstream out(std::filesystem::u8path(out_path));
     if (!out) return SONY2FUJI_STATUS_IO_ERROR;

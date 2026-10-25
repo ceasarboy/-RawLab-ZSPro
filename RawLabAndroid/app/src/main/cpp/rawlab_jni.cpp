@@ -4,6 +4,7 @@
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <android/log.h>
 #include <unordered_map>
 #include <vector>
 #include <string>
@@ -62,6 +63,7 @@ void check(sony2fuji_status status) {
         throw NativeStatusError(status);
     rawlab::checkStatus(status);
 }
+
 struct UtfChars {
     JNIEnv* env;
     jstring value;
