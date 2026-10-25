@@ -126,16 +126,34 @@ option(SONY2FUJI_BUILD_DENOISE_DEPS "Build pinned denoise dependencies for the t
 if(SONY2FUJI_ENABLE_CHROMA_DENOISE OR SONY2FUJI_ENABLE_WAVELET_DENOISE)
     if(SONY2FUJI_BUILD_DENOISE_DEPS)
         include(cmake/denoise-dependencies.cmake)
-    else()
+    elseif(SONY2FUJI_ENABLE_CHROMA_DENOISE)
+        # Chroma denoise needs OpenCV: require the system package.
         pkg_check_modules(WAVELIB REQUIRED IMPORTED_TARGET wavelib>=1.0.0)
-        set(denoise_components core imgproc)
-        if(SONY2FUJI_ENABLE_CHROMA_DENOISE)
-            list(APPEND denoise_components ximgproc)
-        endif()
-        find_package(OpenCV 4.12 REQUIRED COMPONENTS ${denoise_components}
+        find_package(OpenCV 4.12 REQUIRED COMPONENTS core imgproc ximgproc
             HINTS "${LIBRAW_LIBRARY_DIRS}/cmake/opencv4")
         set(SONY2FUJI_DENOISE_LIBRARIES ${OpenCV_LIBS} PkgConfig::WAVELIB)
         include_directories(SYSTEM ${OpenCV_INCLUDE_DIRS})
+    else()
+        # ZSPro slim path: wavelet denoising only needs wavelib (a small C
+        # library). Build it from a local source tree when the network
+        # cannot reach github.com.
+        if(NOT WAVELIB_SOURCE_DIR)
+            if(DEFINED ENV{ZSPRO_WAVELIB_SOURCE})
+                file(TO_CMAKE_PATH "$ENV{ZSPRO_WAVELIB_SOURCE}" WAVELIB_SOURCE_DIR)
+            elseif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/wavelib-src/header/wavelib.h")
+                # Vendored copy in the repository (offline default).
+                set(WAVELIB_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/wavelib-src")
+            endif()
+        endif()
+        # OpenCV headers: vendored header-only subset in the Android cpp dir.
+        if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/../RawLabAndroid/app/src/main/cpp/opencv2/opencv2/core.hpp")
+            include_directories(BEFORE SYSTEM "${CMAKE_CURRENT_LIST_DIR}/../RawLabAndroid/app/src/main/cpp")
+        endif()
+        if(NOT WAVELIB_SOURCE_DIR)
+            message(FATAL_ERROR "Wavelet denoise needs wavelib: set ZSPRO_WAVELIB_SOURCE to an extracted wavelib source tree")
+        endif()
+        add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/wavelib" "${CMAKE_CURRENT_BINARY_DIR}/wavelib")
+        set(SONY2FUJI_DENOISE_LIBRARIES wavelib)
     endif()
 endif()
 if(SONY2FUJI_ENABLE_CHROMA_DENOISE)

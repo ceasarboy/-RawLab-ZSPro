@@ -42,19 +42,26 @@ if(DEFINED ENV{ZSPRO_DNGSDK})
 endif()
 
 set(SONY2FUJI_LIBRAW_TARGET raw)
+# Vendored wavelib for the wavelet-denoise slim path (lutools expects the
+# parent dir of src/wavelib.c; the patch .inc files live next to it).
+set(WAVELIB_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/wavelib" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}")
 set(BUILD_CLI OFF CACHE BOOL "" FORCE)
 set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIB OFF CACHE BOOL "" FORCE)
 set(SONY2FUJI_ENABLE_GPU ON CACHE BOOL "" FORCE)
 # ZSPro slim build: lensfun/OpenCV/wavelib come from github.com and are
 # omitted by default; set ZSPRO_FULL_DEPS=1 to enable with network access.
+# ZSPro slim build: lensfun and chroma-denoise (OpenCV full build) stay
+# off - they pull github.com-hosted dependency trees. Wavelet denoise is
+# ON: wavelib C sources are vendored in cpp/wavelib-src and only need
+# header-only cv::Mat shims vendored in cpp/opencv2 (see wavelet_tile.h).
 set(SONY2FUJI_ENABLE_LENSFUN OFF CACHE BOOL "" FORCE)
 set(SONY2FUJI_BUILD_LENS_DEPS OFF CACHE BOOL "" FORCE)
 set(SONY2FUJI_ENABLE_OPENMP OFF CACHE BOOL "" FORCE)
-set(SONY2FUJI_ENABLE_WAVELET_DENOISE OFF CACHE BOOL "" FORCE)
+set(SONY2FUJI_ENABLE_WAVELET_DENOISE ON CACHE BOOL "" FORCE)
 set(SONY2FUJI_ENABLE_CHROMA_DENOISE OFF CACHE BOOL "" FORCE)
-set(SONY2FUJI_BUILD_DENOISE_DEPS OFF CACHE BOOL "" FORCE)
-add_subdirectory("${REPO}/lutools" "${CMAKE_CURRENT_BINARY_DIR}/core")
+set(SONY2FUJI_BUILD_DENOISE_DEPS OFF CACHE BOOL "" FORCE)add_subdirectory("${REPO}/lutools" "${CMAKE_CURRENT_BINARY_DIR}/core")
 # CPU denoise runs inside these dependencies, not only the optimized core wrapper.
 # ZSPro slim builds skip the OpenCV/wavelib dependencies; guard each target.
 foreach(denoise_target wavelib opencv_core opencv_imgproc)

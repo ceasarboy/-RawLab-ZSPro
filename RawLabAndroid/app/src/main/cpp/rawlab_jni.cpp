@@ -58,7 +58,17 @@ void throwNativeStatus(JNIEnv* env, const NativeStatusError& error) {
     if (exception) env->Throw(static_cast<jthrowable>(exception));
 }
 
-void check(sony2fuji_status status) {
+void checkAt(sony2fuji_status status, int line);
+#define check(status) checkAt((status), __LINE__)
+void checkAt(sony2fuji_status status, int line) {
+    if (status == SONY2FUJI_STATUS_OK) return;
+    __android_log_print(ANDROID_LOG_ERROR, "RawLabNative", "status failure at jni line %d: %d (%s)",
+        line, static_cast<int>(status), sony2fuji_status_message(status));
+    if (status == SONY2FUJI_STATUS_IO_ERROR || status == SONY2FUJI_STATUS_OUTPUT_IO_ERROR)
+        throw NativeStatusError(status);
+    rawlab::checkStatus(status);
+}
+void checkOld(sony2fuji_status status) {
     if (status == SONY2FUJI_STATUS_IO_ERROR || status == SONY2FUJI_STATUS_OUTPUT_IO_ERROR)
         throw NativeStatusError(status);
     rawlab::checkStatus(status);
