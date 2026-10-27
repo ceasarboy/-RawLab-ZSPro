@@ -58,12 +58,14 @@ source: https://github.com/ceasarboy/-RawLab-ZSPro
 
 # RawLab (upstream)
 
-[English](README.md) | [简体中文](docs/README.zh-CN.md)
+> ZSPro 仓库未随包分发上游 `docs/` 与 macOS 文档；下列链接指向上游仓库对应文件。
+
+[English](README.md) | [简体中文](https://github.com/dancancer/RawLab/blob/main/docs/README.zh-CN.md)
 
 Cross-brand RAW development and film looks, built around a shared C++ processing
 core with native Windows, macOS, Android and iOS editors.
 
-![RawLab Mac: neutral rendering and Velvia side by side](docs/images/rawlab-mac-velvia.png)
+![RawLab Mac: neutral rendering and Velvia side by side](https://raw.githubusercontent.com/dancancer/RawLab/main/docs/images/rawlab-mac-velvia.png)
 
 ## Overview
 
@@ -127,15 +129,15 @@ film looks do not promise an exact match to in-camera JPEGs.
 
 ## Downloads and Documentation
 
-- [Documentation index](docs/README.md)
+- [Documentation index](https://github.com/dancancer/RawLab/blob/main/docs/README.md)
 - [Download the latest release](https://github.com/dancancer/RawLab/releases/latest)
-- [v0.8.2 release notes (build 14)](docs/releases/v0.8/v0.8.2.md)
-- [Installation and distribution notes](docs/guides/installation.md)
-- [iPhone installation guide](docs/guides/ios-installation.md)
+- [v0.8.2 release notes (build 14)](https://github.com/dancancer/RawLab/blob/main/docs/releases/v0.8/v0.8.2.md)
+- [Installation and distribution notes](https://github.com/dancancer/RawLab/blob/main/docs/guides/installation.md)
+- [iPhone installation guide](https://github.com/dancancer/RawLab/blob/main/docs/guides/ios-installation.md)
 - [Changelog](CHANGELOG.md)
-- [Product roadmap (Chinese)](docs/architecture/roadmap.md)
+- [Product roadmap (Chinese)](https://github.com/dancancer/RawLab/blob/main/docs/architecture/roadmap.md)
 - [Windows client](RawLabWindows/README.md)
-- [macOS client](RawLabMac/README.md)
+- [macOS client](https://github.com/dancancer/RawLab/blob/main/RawLabMac/README.md)
 - [Android client](RawLabAndroid/README.md)
 - [iOS core build and integration](lutools/platform/ios/README.md)
 - [Processing core and CLI](lutools/README.md)
@@ -148,4 +150,4 @@ Copyright (c) 2026 RawLab contributors. This release's original project code is
 distributed under the [GNU General Public License v3.0 only](LICENSE)
 (`GPL-3.0-only`), with a narrow [Alibaba Cloud RUM SDK linking exception](LICENSE-ALIYUN-RUM-EXCEPTION)
 under GPLv3 section 7. Third-party libraries, LUTs and other bundled assets retain
-their own licenses and copyright notices. See [licensing and attribution](docs/reference/licensing.md).
+their own licenses and copyright notices. See [licensing and attribution](https://github.com/dancancer/RawLab/blob/main/docs/reference/licensing.md).
