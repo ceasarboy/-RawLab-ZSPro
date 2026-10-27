@@ -11,6 +11,14 @@
 
 Native Kotlin / Jetpack Compose RAW editor using the shared C++ pipeline through JNI.
 
+## ZSPro 2.0 相对上游 v0.8.2 的差异
+
+- 增加：四面体 3D-LUT 插值、松下 STD 底座适配、look 叠加烘焙、显示 look 契约、温度白平衡回退，以及 Android 打包内置 look/recipe/胶片图标。
+- 增加：Android 完整小波降噪（vendored wavelib + OpenCV core/imgproc）；GPU 降噪导出 20MP 30.8s → 11.1s，50MP 25.8s，画质不变。
+- 修复：松下 CUBE「适配 STD 底座」的 `OverlappingFileLockException`；降噪打不开（OpenCV 3rdparty 静态库与开关绑定）；LUT 启用时降噪被连带降级到 CPU。
+- 修复：非 GPU 构建的 display-look 路由编译、look 烘焙字符字面量、slim 构建缺镜头库启动崩溃、MPF/EOI 尾随数据 JPEG 误拒。
+- 完整的上游更新、ZSPro 增加与修复清单见[根目录 README](../README.md#与上游的差异--differences-from-upstream)。
+
 ## 功能 / Features
 
 - 几何面板支持百分比裁切、90° 旋转、水平/垂直翻转、±100% 水平/垂直透视及 ±45° 拉直；透视和拉直自动保留中心无黑边画面。所有操作在 RAW 方向校正之后、输出缩放之前执行，顺序为旋转/翻转→透视→拉直→裁切，裁切坐标基于变换后的画面。参数接入逐照片记忆与批量快照；旧基础几何记录保留原有设置并将透视设为零，无几何记录保持原图。原图对比使用同一几何，原始 RAW 不写回。当前几何在 CPU 执行，Auto 可回退，Force 不隐藏 CPU 混合处理。
